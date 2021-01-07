@@ -1,16 +1,21 @@
 # This file is part of the genieclust package for R.
-#
-# Copyright (C) 2018-2020 Marek Gagolewski (https://www.gagolewski.com)
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License
-# Version 3, 19 November 2007, published by the Free Software Foundation.
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Affero General Public License Version 3 for more details.
-# You should have received a copy of the License along with this program.
-# If not, see <https://www.gnu.org/licenses/>.
+
+# ############################################################################ #
+#                                                                              #
+#   Copyleft (C) 2020-2021, Marek Gagolewski <https://www.gagolewski.com>      #
+#                                                                              #
+#                                                                              #
+#   This program is free software: you can redistribute it and/or modify       #
+#   it under the terms of the GNU Affero General Public License                #
+#   Version 3, 19 November 2007, published by the Free Software Foundation.    #
+#   This program is distributed in the hope that it will be useful,            #
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of             #
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the               #
+#   GNU Affero General Public License Version 3 for more details.              #
+#   You should have received a copy of the License along with this program.    #
+#   If this is not the case, refer to <https://www.gnu.org/licenses/>.         #
+#                                                                              #
+# ############################################################################ #
 
 
 
@@ -61,13 +66,13 @@
 #'
 #'
 #' @references
-#' V. Jarník, O jistém problému minimálním,
+#' Jarník V., O jistém problému minimálním,
 #' Práce Moravské Přírodovědecké Společnosti 6 (1930) 57–63.
 #'
-#' C.F. Olson, Parallel algorithms for hierarchical clustering,
+#' Olson C.F., Parallel algorithms for hierarchical clustering,
 #' Parallel Comput. 21 (1995) 1313–1325.
 #'
-#' R. Prim, Shortest connection networks and some generalisations,
+#' Prim R., Shortest connection networks and some generalisations,
 #' Bell Syst. Tech. J. 36 (1957) 1389–1401.
 #'
 #' Campello R., Moulavi D., Zimek A., Sander J.,
@@ -172,17 +177,11 @@ registerS3method("mst", "dist",    "mst.dist")
 #'
 #' @description
 #' Provides access to an implementation of the Dual-Tree Borůvka
-#' algorithm based on kd-trees. It is fast for (very) low-dimensional
+#' algorithm based on kd-trees from MLPACK. It is fast for (very) low-dimensional
 #' Euclidean spaces. For higher dimensional spaces (say, over 5 features)
-#' or other metrics,
-#' use the parallelised Prim-like algorithm implemented in \code{\link{mst}()}.
+#' or other metrics, use the parallelised Prim-like algorithm implemented
+#' in \code{\link{mst}()}.
 #'
-#'
-#' @details
-#' Calls \code{emstreeR::mlpack_mst()} and converts the result
-#' so that it is compatible with the output of \code{\link{mst}()}.
-#'
-#' If the \code{emstreeR} package is not available, an error is generated.
 #'
 #' @param X a numeric matrix (or an object coercible to one,
 #'     e.g., a data frame with numeric-like columns)
@@ -204,20 +203,16 @@ registerS3method("mst", "dist",    "mst.dist")
 emst_mlpack <- function(X, verbose=FALSE)
 {
     X <- as.matrix(X)
-    if (requireNamespace("emstreeR", quietly=TRUE)) {
 
-        if (!verbose)
-            capture.output({mst <- emstreeR::mlpack_mst(X)})
-        else
-            mst <- emstreeR::mlpack_mst(X)
+    if (!verbose)
+        capture.output({mst <- .emst_mlpack(X)})
+    else
+        mst <- .emst_mlpack(X)
 
-        structure(t(mst),
-            class="mst",
-            method="euclidean",
-            Labels=dimnames(X)[[1]]
-        )
-
-    } else {
-        stop("emstreeR` package is not installed.")
-    }
+    structure(
+        mst,
+        class="mst",
+        method="euclidean",
+        Labels=dimnames(X)[[1]]
+    )
 }

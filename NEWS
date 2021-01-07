@@ -1,6 +1,27 @@
 # `genieclust` Package NEWS
 
 
+## genieclust 0.9.7 (2021-01-07)
+
+-   [Python] Python >= 3.7 is now required (implied by `numpy`).
+
+-   [R] Use `RcppMLPACK` directly instead of via a wrapper, `emstreeR`.
+
+
+## genieclust 0.9.6 (2021-01-05)
+
+-   [Python] Python >= 3.7 is now required (implied by `numpy`).
+
+
+## genieclust 0.9.5 (2021-01-04)
+
+-   [Python] `nmslib` is now required.
+
+-   [R] switched to `tinytest` for unit testing.
+
+-   [R] fixed the examples that relied on a now-changed API of `emstreeR`.
+
+
 ## genieclust 0.9.4 (2020-07-31)
 
 -   [BUGFIX] [R] Fix build on Solaris.
@@ -9,7 +30,7 @@
 ## genieclust 0.9.3 (2020-07-25)
 
 -   [BUGFIX] [PYTHON] Code coverage CI added. Fixed some minor inconsistencies.
-    Automated the bdist build chain.
+    Automated the `bdist` build chain.
 
 -   [R] Updated DESCRIPTION to meet the CRAN policies.
 

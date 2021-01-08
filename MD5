@@ -1,7 +1,7 @@
-ca61b7772c31720e36d4bd504565537d *DESCRIPTION
+785cc8aa8c5c87c28a3fa4afa96682c3 *DESCRIPTION
 a2ec20536b8a46381a58a41b9e3dc887 *NAMESPACE
-a2f648660c7385b71b857b623b7cccaf *NEWS
-a9675468e69d6e0582a434a0ce74e20f *R/RcppExports.R
+b35067d21c571b1e6f95ee8a9901e347 *NEWS
+e7ebfbf87346f1220a35213be5e0cd1c *R/RcppExports.R
 3492c02e48e499c83ceb7a372ebfd9d5 *R/gclust.R
 a3247b08fbda1cbf20ff0b9dfe150d3f *R/genieclust-package.R
 ef47ad0415a3ba677bb5a92dac49b003 *R/mst.R
@@ -13,7 +13,7 @@ a4ecdf4daff5765362e70a986363a234 *man/gclust.Rd
 51c06cf849aa9b556825d0757ec66d4e *man/mst.Rd
 f4da2b6208222f241f8d8e7db655e5a4 *src/Makevars
 f4da2b6208222f241f8d8e7db655e5a4 *src/Makevars.win
-eda9d57494213fe14c4e68a09cf8165c *src/RcppExports.cpp
+f9be9133f25046cd712a6a4d9833e51e *src/RcppExports.cpp
 d12ec0bf4e82bb36acc92776c10f18cb *src/c_argfuns.h
 9d739b8825921b60a39faa02b746fe9a *src/c_common.h
 42046a9c91d2326e4004084e6de243b1 *src/c_compare_partitions.h
@@ -28,7 +28,7 @@ ea0cd69287ce3cef5dbf4a81f9eb02d6 *src/c_mst.h
 085c588e99ff3f2740650390c9a5117e *src/c_postprocess.h
 353f60f937ebecae0538b64d8860f1e8 *src/c_preprocess.h
 c0ee19c026d36038a354f89843f44095 *src/c_scipy_rectangular_lsap.h
-b47d4e13a8fa91c6581954a2c6646142 *src/r_compare_partitions.cpp
-9e5fe281a456d0c8f28dcb8381a98790 *src/r_emst.cpp
-9853d86c10ea21ec1aeb45851448b944 *src/r_gclust.cpp
+c5d60f8f5d2833698df174db1d61bdbb *src/r_compare_partitions.cpp
+7c30adf265eb06d201179a3856811dec *src/r_emst.cpp
+aaf9e40a04c4afffa663890c18196c91 *src/r_gclust.cpp
 0ce8413f2de0af137eedb062077e8c40 *src/r_inequity.cpp

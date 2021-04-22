@@ -4,13 +4,13 @@
 #' @title Pairwise Partition Similarity Scores
 #'
 #' @description
-#' Let \code{x} and \code{y} represent two partitions of a set of \code{n}
-#' elements into \eqn{K} and \eqn{L}, respectively,
-#' nonempty and pairwise disjoint subsets,
-#' e.g., two clusterings of a dataset with \code{n} observations
-#' represented as label vectors.
-#' These functions quantify the similarity between \code{x}
-#' and \code{y}. They can be used as external cluster
+#' Let \code{x} and \code{y} represent two partitions of a set of \eqn{n}
+#' elements into, respectively, \eqn{K} and \eqn{L}
+#' nonempty and pairwise disjoint subsets.
+#' For instance, these can be two clusterings of a dataset with
+#' \eqn{n} observations specified by two vectors of labels.
+#' The functions described in this section quantify the similarity between
+#' \code{x} and \code{y}. They can be used as external cluster
 #' validity measures, i.e., in the presence of reference (ground-truth)
 #' partitions.
 #'
@@ -147,10 +147,6 @@ normalized_accuracy <- function(x, y = NULL) {
 #' @export
 pair_sets_index <- function(x, y = NULL) {
     .Call(`_genieclust_pair_sets_index`, x, y)
-}
-
-.emst_mlpack <- function(X) {
-    .Call(`_genieclust_dot_emst_mlpack`, X)
 }
 
 .mst.default <- function(X, distance = "euclidean", M = 1L, cast_float32 = TRUE, verbose = FALSE) {

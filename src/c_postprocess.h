@@ -1,6 +1,6 @@
 /*  Noisy k-partition post-processing
  *
- *  Copyleft (C) 2018-2021, Marek Gagolewski <https://www.gagolewski.com>
+ *  Copyleft (C) 2018-2022, Marek Gagolewski <https://www.gagolewski.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License
@@ -65,7 +65,7 @@ void Cmerge_boundary_points(
         ssize_t u = ind[2*i+0];
         ssize_t v = ind[2*i+1];
         if (u<0 || v<0)
-            continue; // represents a no-edge → ignore
+            continue; // represents a no-edge -> ignore
         if (u>=n || v>=n)
             throw std::domain_error("All elements must be <= n");
         if (c[u] < 0 && c[v] < 0)
@@ -123,7 +123,7 @@ void Cmerge_noise_points(
         ssize_t u = ind[2*i+0];
         ssize_t v = ind[2*i+1];
         if (u<0 || v<0)
-            continue; // represents a no-edge → ignore
+            continue; // represents a no-edge -> ignore
         if (u>=n || v>=n)
             throw std::domain_error("All elements must be <= n");
         if (c[u] < 0 && c[v] < 0)

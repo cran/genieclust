@@ -56,7 +56,7 @@ If \code{M} > 1, the \code{nn} attribute gives the indices of the \code{M}-1
 nearest neighbours of each point.
 }
 \description{
-An parallelised implementation of a Jarník (Prim/Dijkstra)-like
+An parallelised implementation of a Jarnik (Prim/Dijkstra)-like
 algorithm for determining
 a(*) minimum spanning tree (MST) of a complete undirected graph
 representing a set of n points
@@ -100,21 +100,28 @@ tree <- mst(X)
 
 }
 \references{
-Jarník V., O jistém problému minimálním,
-Práce Moravské Přírodovědecké Společnosti 6 (1930) 57–63.
+V. Jarnik, O jistem problemu minimalnim,
+Prace Moravske Prirodovedecke Spolecnosti 6 (1930) 57-63.
 
 Olson C.F., Parallel algorithms for hierarchical clustering,
-Parallel Comput. 21 (1995) 1313–1325.
+Parallel Comput. 21 (1995) 1313-1325.
 
 Prim R., Shortest connection networks and some generalisations,
-Bell Syst. Tech. J. 36 (1957) 1389–1401.
+Bell Syst. Tech. J. 36 (1957) 1389-1401.
 
 Campello R., Moulavi D., Zimek A., Sander J.,
 Hierarchical density estimates for data clustering, visualization,
 and outlier detection,
-ACM Transactions on Knowledge Discovery from Data 10(1) (2015) 5:1–5:51.
+ACM Transactions on Knowledge Discovery from Data 10(1) (2015) 5:1-5:51.
 }
 \seealso{
+The official online manual of \pkg{genieclust} at \url{https://genieclust.gagolewski.com/}
+
+Gagolewski M., \pkg{genieclust}: Fast and robust hierarchical clustering, \emph{SoftwareX} 15:100722, 2021, \doi{10.1016/j.softx.2021.100722}.
+
 \code{\link{emst_mlpack}()} for a very fast alternative
 in case of (very) low-dimensional Euclidean spaces (and \code{M} = 1).
+}
+\author{
+\href{https://www.gagolewski.com/}{Marek Gagolewski} and other contributors
 }

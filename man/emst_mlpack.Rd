@@ -21,7 +21,7 @@ controls the trade-off between speed and memory consumption}
 An object of class \code{mst}, see \code{\link{mst}()} for details.
 }
 \description{
-Provides access to the implementation of the Dual-Tree Borůvka
+Provides access to the implementation of the Dual-Tree Boruvka
 algorithm from the \code{mlpack} package (if available).
 It is based on kd-trees and is fast for (very) low-dimensional
 Euclidean spaces. For higher dimensional spaces (say, over 5 features)
@@ -36,4 +36,13 @@ Proc. ACM SIGKDD'10 (2010) 603-611, \url{https://mlpack.org/papers/emst.pdf}.
 Curtin R.R., Edel M., Lozhnikov M., Mentekidis Y., Ghaisas S., Zhang S.,
 mlpack 3: A fast, flexible machine learning library,
 Journal of Open Source Software 3(26), 726, 2018.
+}
+\author{
+\href{https://www.gagolewski.com/}{Marek Gagolewski} and other contributors
+}
+\seealso{
+The official online manual of \pkg{genieclust} at \url{https://genieclust.gagolewski.com/}
+
+Gagolewski M., \pkg{genieclust}: Fast and robust hierarchical clustering, \emph{SoftwareX} 15:100722, 2021, \doi{10.1016/j.softx.2021.100722}.
+
 }

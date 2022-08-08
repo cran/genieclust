@@ -5,6 +5,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // adjusted_rand_score
 double adjusted_rand_score(RObject x, RObject y);
 RcppExport SEXP _genieclust_adjusted_rand_score(SEXP xSEXP, SEXP ySEXP) {
@@ -192,6 +197,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// devergottini_index
+double devergottini_index(Rcpp::NumericVector x);
+RcppExport SEXP _genieclust_devergottini_index(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(devergottini_index(x));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_genieclust_adjusted_rand_score", (DL_FUNC) &_genieclust_adjusted_rand_score, 2},
@@ -209,6 +225,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_genieclust_dot_gclust", (DL_FUNC) &_genieclust_dot_gclust, 3},
     {"_genieclust_gini_index", (DL_FUNC) &_genieclust_gini_index, 1},
     {"_genieclust_bonferroni_index", (DL_FUNC) &_genieclust_bonferroni_index, 1},
+    {"_genieclust_devergottini_index", (DL_FUNC) &_genieclust_devergottini_index, 1},
     {NULL, NULL, 0}
 };
 

@@ -1,6 +1,6 @@
 /*  Various distances (Euclidean, mutual reachability distance, ...)
  *
- *  Copyleft (C) 2018-2021, Marek Gagolewski <https://www.gagolewski.com>
+ *  Copyleft (C) 2018-2022, Marek Gagolewski <https://www.gagolewski.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License
@@ -159,7 +159,7 @@ struct CDistanceEuclidean : public CDistance<T>  {
             const T* y = X+d*w;
 
             // or we could use the BLAS snrm2() for increased numerical
-            // stability. are we building a rocket though?
+            // stability; are we building a rocket though?
             __buf[w] = 0.0;
             for (ssize_t u=0; u<d; ++u) {
                 __buf[w] += (x[u]-y[u])*(x[u]-y[u]);
@@ -212,7 +212,7 @@ struct CDistanceEuclideanSquared : public CDistance<T>  {
             const T* y = X+d*w;
 
             // or we could use the BLAS snrm2() for increased numerical
-            // stability. are we building a rocket though?
+            // stability; are we building a rocket though?
             __buf[w] = 0.0;
             for (ssize_t u=0; u<d; ++u) {
                 __buf[w] += (x[u]-y[u])*(x[u]-y[u]);
@@ -343,7 +343,7 @@ struct CDistanceCosine : public CDistance<T>  {
  *
  *  [1] R. Campello, D. Moulavi, A. Zimek, J. Sander, Hierarchical density
  *  estimates for data clustering, visualization, and outlier detection,
- *  ACM Transactions on Knowledge Discovery from Data 10(1):5:1–5:51, 2015.
+ *  ACM Transactions on Knowledge Discovery from Data 10(1):5:1-5:51, 2015.
  *  doi: 10.1145/2733381.
  *
  */

@@ -108,7 +108,7 @@ for compatibility with HDBSCAN*.}
 \value{
 \code{gclust()} computes the whole clustering hierarchy; it
 returns a list of class \code{hclust},
-see \code{\link[stats]{hclust}}. Use \code{link{cutree}()} to obtain
+see \code{\link[stats]{hclust}}. Use \code{\link[stats]{cutree}} to obtain
 an arbitrary k-partition.
 
 \code{genie()} returns a \code{k}-partition - a vector with elements in 1,...,k,
@@ -188,16 +188,24 @@ h <- gclust(emst_mlpack(X))
 \references{
 Gagolewski M., Bartoszuk M., Cena A.,
 Genie: A new, fast, and outlier-resistant hierarchical clustering algorithm,
-\emph{Information Sciences} 363, 2016, 8-23.
+\emph{Information Sciences} 363, 2016, 8-23,
+\doi{10.1016/j.ins.2016.05.003}.
 
 Campello R., Moulavi D., Zimek A., Sander J.,
 Hierarchical density estimates for data clustering, visualization,
 and outlier detection,
-ACM Transactions on Knowledge Discovery from Data 10(1), 2015, 5:1–5:51.
+ACM Transactions on Knowledge Discovery from Data 10(1), 2015, 5:1-5:51.
 }
 \seealso{
+The official online manual of \pkg{genieclust} at \url{https://genieclust.gagolewski.com/}
+
+Gagolewski M., \pkg{genieclust}: Fast and robust hierarchical clustering, \emph{SoftwareX} 15:100722, 2021, \doi{10.1016/j.softx.2021.100722}.
+
 \code{\link{mst}()} for the minimum spanning tree routines.
 
 \code{\link{adjusted_rand_score}()} (amongst others) for external
 cluster validity measures (partition similarity scores).
+}
+\author{
+\href{https://www.gagolewski.com/}{Marek Gagolewski} and other contributors
 }

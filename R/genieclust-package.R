@@ -2,7 +2,7 @@
 
 # ############################################################################ #
 #                                                                              #
-#   Copyleft (C) 2020-2021, Marek Gagolewski <https://www.gagolewski.com>      #
+#   Copyleft (C) 2020-2022, Marek Gagolewski <https://www.gagolewski.com>      #
 #                                                                              #
 #                                                                              #
 #   This program is free software: you can redistribute it and/or modify       #
@@ -29,7 +29,6 @@
 #' @rdname genieclust-package
 #' @aliases genieclust
 #' @docType package
-#' @author Marek Gagolewski
 #'
 #' @useDynLib genieclust, .registration=TRUE
 #' @importFrom Rcpp evalCpp

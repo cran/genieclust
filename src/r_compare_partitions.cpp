@@ -87,25 +87,57 @@ std::vector<int> get_contingency_matrix(RObject x, RObject y,
 
 
 
-//' @title Pairwise Partition Similarity Scores
+//' @title External Cluster Validity Measures and Pairwise Partition Similarity Scores
 //'
 //' @description
-//' Let \code{x} and \code{y} represent two partitions of a set of \eqn{n}
-//' elements into, respectively, \eqn{K} and \eqn{L}
-//' nonempty and pairwise disjoint subsets.
-//' For instance, these can be two clusterings of a dataset with
-//' \eqn{n} observations specified by two vectors of labels.
 //' The functions described in this section quantify the similarity between
-//' \code{x} and \code{y}. They can be used as external cluster
-//' validity measures, i.e., in the presence of reference (ground-truth)
-//' partitions.
+//' two label vectors \code{x} and \code{y} which represent two partitions
+//' of a set of \eqn{n} elements into, respectively, \eqn{K} and \eqn{L}
+//' nonempty and pairwise disjoint subsets.
+//'
+//' For instance, \code{x} and \code{y} can be two clusterings
+//' of a dataset with \eqn{n} observations specified by two vectors
+//' of labels. These functions can be used as external cluster
+//' validity measures, where we assume that \code{x} is
+//' the reference (ground-truth) partition (compare Gagolewski, 2022).
 //'
 //' @details
-//' Every index except \code{mi_score()} (which computes the mutual
+//' Each index except \code{adjusted_asymmetric_accuracy()}
+//' can act as a pairwise partition similarity score: it is symmetric,
+//' i.e., \code{index(x, y) == index(y, x)}.
+//'
+//' Each index except \code{mi_score()} (which computes the mutual
 //' information score) outputs 1 given two identical partitions.
 //' Note that partitions are always defined up to a bijection of the set of
 //' possible labels, e.g., (1, 1, 2, 1) and (4, 4, 2, 4)
 //' represent the same 2-partition.
+//'
+//'
+//' \code{adjusted_asymmetric_accuracy()} (Gagolewski, 2022)
+//' only accepts \eqn{K = L}. It is an external cluster validity measure
+//' which assumes that the label vector \code{x} (or rows in the confusion
+//' matrix) represents the reference (ground truth) partition.
+//' It is a corrected-for-chance summary of the proportion of correctly
+//' classified points in each cluster (with cluster matching based on the
+//' solution to the maximal linear sum assignment problem;
+//' see \code{\link{normalized_confusion_matrix}}), given by:
+//' \eqn{(\max_\sigma \sum_{i=1}^K (c_{i, \sigma(i)}/(c_{i, 1}+...+c_{i, K})) - 1)/(K - 1)},
+//' where \eqn{C} is the confusion matrix.
+//'
+//' \code{normalized_accuracy()} is defined as
+//' \eqn{(Accuracy(C_\sigma)-1/L)/(1-1/L)}, where \eqn{C_\sigma} is a version
+//' of the confusion matrix for given \code{x} and \code{y},
+//' \eqn{K \leq L}, with columns permuted based on the solution to the
+//' maximal linear sum assignment problem.
+//' The \eqn{Accuracy(C_\sigma)} part is sometimes referred to as
+//' set-matching classification rate or pivoted accuracy.
+//'
+//' \code{pair_sets_index()} gives the Pair Sets Index (PSI)
+//' adjusted for chance (Rezaei, Franti, 2016), \eqn{K \leq L}.
+//' Pairing is based on the solution to the linear sum assignment problem
+//' of a transformed version of the confusion matrix.
+//' Its simplified version assumes E=1 in the definition of the index,
+//' i.e., uses Eq. (20) instead of (18).
 //'
 //' \code{rand_score()} gives the Rand score (the "probability" of agreement
 //' between the two partitions) and
@@ -128,49 +160,74 @@ std::vector<int> get_contingency_matrix(RObject x, RObject y,
 //' see the definition of \eqn{AMI_{sum}} and \eqn{NMI_{sum}}
 //' in (Vinh et al., 2010).
 //'
-//' \code{normalized_accuracy()} is defined as
-//' \eqn{(Accuracy(C_\sigma)-1/L)/(1-1/L)}, where \eqn{C_\sigma} is a version
-//' of the confusion matrix for given \code{x} and \code{y},
-//' \eqn{K \leq L}, with columns permuted based on the solution to the
-//' Maximal Linear Sum Assignment Problem.
-//' \eqn{Accuracy(C_\sigma)} is sometimes referred to as Purity,
-//' e.g., in (Rendon et al. 2011).
 //'
-//' \code{pair_sets_index()} gives the  Pair Sets Index (PSI)
-//' adjusted for chance (Rezaei, Franti, 2016), \eqn{K \leq L}.
-//' Pairing is based on the solution to the Linear Sum Assignment Problem
-//' of a transformed version of the confusion matrix.
+//' \code{normalized_confusion_matrix()} computes the confusion matrix
+//' and permutes its rows and columns so that the sum of the elements
+//' of the main diagonal is the largest possible (by solving
+//' the maximal assignment problem).
+//' The function only accepts \eqn{K \leq L}.
+//' The sole reordering of the columns of a confusion matrix can be determined
+//' by calling \code{normalizing_permutation()}.
+//'
+//' Also note that the built-in
+//' \code{\link{table}()} determines the standard confusion matrix.
+//'
 //'
 //' @references
-//' Hubert L., Arabie P., Comparing Partitions,
-//' Journal of Classification 2(1), 1985, 193-218, esp. Eqs. (2) and (4).
+//' Gagolewski M., \emph{A Framework for Benchmarking Clustering Algorithms},
+//' 2022, \url{https://clustering-benchmarks.gagolewski.com}.
 //'
-//' Rendon E., Abundez I., Arizmendi A., Quiroz E.M.,
-//' Internal versus external cluster validation indexes,
-//' International Journal of Computers and Communications 5(1), 2011, 27-34.
+//' Gagolewski M., Adjusted asymmetric accuracy: A well-behaving external
+//' cluster validity measure, 2022, submitted for publication.
+//'
+//' Hubert L., Arabie P., Comparing partitions,
+//' \emph{Journal of Classification} 2(1), 1985, 193-218, esp. Eqs. (2) and (4).
+//'
+//' Meila M., Heckerman D., An experimental comparison of model-based clustering
+//' methods, \emph{Machine Learning} 42, 2001, pp. 9-29,
+//' \doi{10.1023/A:1007648401407}.
 //'
 //' Rezaei M., Franti P., Set matching measures for external cluster validity,
-//' IEEE Transactions on Knowledge and Data Mining 28(8), 2016, 2173-2186.
+//' \emph{IEEE Transactions on Knowledge and Data Mining} 28(8), 2016,
+//' 2173-2186.
+//'
+//' Steinley D., Properties of the Hubert-Arabie adjusted Rand index,
+//' \emph{Psychological Methods} 9(3), 2004, pp. 386-396,
+//' \doi{10.1037/1082-989X.9.3.386}.
 //'
 //' Vinh N.X., Epps J., Bailey J.,
 //' Information theoretic measures for clusterings comparison:
 //' Variants, properties, normalization and correction for chance,
-//' Journal of Machine Learning Research 11, 2010, 2837-2854.
+//' \emph{Journal of Machine Learning Research} 11, 2010, 2837-2854.
+//'
 //'
 //'
 //' @param x an integer vector of length n (or an object coercible to)
-//' representing a K-partition of an n-set,
-//' or a confusion matrix with K rows and L columns (see \code{table(x, y)})
+//' representing a K-partition of an n-set (e.g., a reference partition),
+//' or a confusion matrix with K rows and L columns
+//' (see \code{\link{table}(x, y)})
 //'
 //' @param y an integer vector of length n (or an object coercible to)
-//' representing an L-partition of the same set),
+//' representing an L-partition of the same set (e.g., the output of a
+//' clustering algorithm we wish to compare with \code{x}),
 //' or NULL (if x is an K*L confusion matrix)
 //'
-//' @return A single real value giving the similarity score.
+//' @param simplified whether to assume E=1 in the definition of the pair sets index index,
+//'     i.e., use Eq. (20) instead of (18); see (Rezaei, Franti, 2016).
+//'
+//'
+//' @return Each cluster validity measure is a single numeric value.
+//'
+//' \code{normalized_confusion_matrix()} returns an integer matrix.
+//'
 //'
 //' @examples
 //' y_true <- iris[[5]]
 //' y_pred <- kmeans(as.matrix(iris[1:4]), 3)$cluster
+//' adjusted_asymmetric_accuracy(y_true, y_pred)
+//' normalized_accuracy(y_true, y_pred)
+//' pair_sets_index(y_true, y_pred)
+//' pair_sets_index(y_true, y_pred, simplified=TRUE)
 //' adjusted_rand_score(y_true, y_pred)
 //' rand_score(table(y_true, y_pred)) # the same
 //' adjusted_fm_score(y_true, y_pred)
@@ -178,9 +235,55 @@ std::vector<int> get_contingency_matrix(RObject x, RObject y,
 //' mi_score(y_true, y_pred)
 //' normalized_mi_score(y_true, y_pred)
 //' adjusted_mi_score(y_true, y_pred)
-//' normalized_accuracy(y_true, y_pred)
-//' pair_sets_index(y_true, y_pred)
+//' normalized_confusion_matrix(y_true, y_pred)
+//' normalizing_permutation(y_true, y_pred)
 //'
+//' @rdname comparing_partitions
+//' @name comparing_partitions
+//' @export
+//[[Rcpp::export]]
+double adjusted_asymmetric_accuracy(RObject x, RObject y=R_NilValue)
+{
+    ssize_t xc, yc;
+    std::vector<int> C(
+        get_contingency_matrix(x, y, &xc, &yc)
+    );
+
+    return Ccompare_partitions_aaa(C.data(), xc, yc);
+}
+
+
+//' @rdname comparing_partitions
+//' @export
+//[[Rcpp::export]]
+double normalized_accuracy(RObject x, RObject y=R_NilValue)
+{
+    ssize_t xc, yc;
+    std::vector<int> C(
+        get_contingency_matrix(x, y, &xc, &yc)
+    );
+
+    return Ccompare_partitions_nacc(C.data(), xc, yc);
+}
+
+
+//' @rdname comparing_partitions
+//' @export
+//[[Rcpp::export]]
+double pair_sets_index(RObject x, RObject y=R_NilValue, bool simplified=false)
+{
+    ssize_t xc, yc;
+    std::vector<int> C(
+        get_contingency_matrix(x, y, &xc, &yc)
+    );
+
+    if (simplified)
+        return Ccompare_partitions_psi(C.data(), xc, yc).spsi;
+    else
+        return Ccompare_partitions_psi(C.data(), xc, yc).psi;
+}
+
+
 //' @rdname comparing_partitions
 //' @export
 //[[Rcpp::export]]
@@ -285,28 +388,41 @@ double adjusted_mi_score(RObject x, RObject y=R_NilValue)
 //' @rdname comparing_partitions
 //' @export
 //[[Rcpp::export]]
-double normalized_accuracy(RObject x, RObject y=R_NilValue)
+IntegerMatrix normalized_confusion_matrix(RObject x, RObject y=R_NilValue)
 {
     ssize_t xc, yc;
     std::vector<int> C(
         get_contingency_matrix(x, y, &xc, &yc)
     );
 
-    return Ccompare_partitions_nacc(C.data(), xc, yc);
+    std::vector<int> C_out_Corder(xc*yc);
+    Capply_pivoting(C.data(), xc, yc, C_out_Corder.data());
+
+    IntegerMatrix Cout(xc, yc);
+    for (ssize_t i=0; i<xc; ++i)  // make Fortran order
+            for (ssize_t j=0; j<yc; ++j)
+                Cout(i, j) = C_out_Corder[j+i*yc];
+    return Cout;
 }
+
 
 
 //' @rdname comparing_partitions
 //' @export
 //[[Rcpp::export]]
-double pair_sets_index(RObject x, RObject y=R_NilValue)
+IntegerVector normalizing_permutation(RObject x, RObject y=R_NilValue)
 {
     ssize_t xc, yc;
     std::vector<int> C(
         get_contingency_matrix(x, y, &xc, &yc)
     );
 
-    return Ccompare_partitions_psi(C.data(), xc, yc);
+    IntegerVector Iout(yc);
+
+    Cnormalizing_permutation(C.data(), xc, yc, INTEGER(SEXP(Iout)));
+
+    for (ssize_t j=0; j<yc; ++j)
+        Iout[j]++; // 0-based -> 1-based
+
+    return Iout;
 }
-
-

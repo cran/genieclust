@@ -1,9 +1,9 @@
 Package: genieclust
 Type: Package
-Title: The Genie++ Hierarchical Clustering Algorithm with Noise Points
+Title: Fast and Robust Hierarchical Clustering with Noise Points
         Detection
-Version: 1.0.1
-Date: 2022-08-08
+Version: 1.1.0
+Date: 2022-09-05
 Authors@R: c(
     person("Marek", "Gagolewski",
         role = c("aut", "cre", "cph"),
@@ -26,13 +26,17 @@ Description: A retake on the Genie algorithm
     clusters and hence it does not dependent on the somewhat
     fragile 'eps' parameter).
     The package also features an implementation of economic inequity indices
-    (the Gini, Bonferroni index) and external cluster validity measures
-    (partition similarity scores; e.g., the adjusted Rand, Fowlkes-Mallows,
-    adjusted mutual information, pair sets index).
+    (the Gini, Bonferroni index), external cluster validity measures
+    (e.g., the adjusted asymmetric accuracy and partition similarity scores
+    such as the adjusted Rand, Fowlkes-Mallows, adjusted mutual information,
+    and pair sets indices),
+    and internal cluster validity indices (e.g., the Calinski-Harabasz,
+    Davies-Bouldin, Ball-Hall, Silhouette, and generalised Dunn indices).
     See also the 'Python' version of 'genieclust' available on 'PyPI', which
     supports sparse data, more metrics, and even larger datasets.
 BugReports: https://github.com/gagolews/genieclust/issues
 URL: https://genieclust.gagolewski.com/,
+        https://clustering-benchmarks.gagolewski.com/,
         https://github.com/gagolews/genieclust
 License: AGPL-3
 Imports: Rcpp (>= 1.0.4), stats, utils
@@ -42,7 +46,7 @@ Encoding: UTF-8
 SystemRequirements: OpenMP, C++11
 RoxygenNote: 7.2.1
 NeedsCompilation: yes
-Packaged: 2022-08-08 05:03:25 UTC; gagolews
+Packaged: 2022-09-05 02:44:13 UTC; gagolews
 Author: Marek Gagolewski [aut, cre, cph]
     (<https://orcid.org/0000-0003-0637-6028>),
   Maciej Bartoszuk [ctb],
@@ -50,4 +54,4 @@ Author: Marek Gagolewski [aut, cre, cph]
   Peter M. Larsen [ctb]
 Maintainer: Marek Gagolewski <marek@gagolewski.com>
 Repository: CRAN
-Date/Publication: 2022-08-08 11:40:09 UTC
+Date/Publication: 2022-09-05 08:40:02 UTC

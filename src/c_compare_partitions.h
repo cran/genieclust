@@ -66,12 +66,12 @@ inline double Ccomb2(double t)
  * @param xmax [out] the maximum of x
  */
 template<class T>
-void Cminmax(const T* x, ssize_t n, T* xmin, T* xmax)
+void Cminmax(const T* x, Py_ssize_t n, T* xmin, T* xmax)
 {
     *xmin = x[0];
     *xmax = x[0];
 
-    for (ssize_t i=1; i<n; ++i) {
+    for (Py_ssize_t i=1; i<n; ++i) {
         if      (x[i] < *xmin) *xmin = x[i];
         else if (x[i] > *xmax) *xmax = x[i];
     }
@@ -132,25 +132,25 @@ struct CCompareSetMatchingResult {
  */
 template<class T1, class T2>
 void Cnormalizing_permutation(
-    const T1* C, ssize_t xc, ssize_t yc, T2* Iout
+    const T1* C, Py_ssize_t xc, Py_ssize_t yc, T2* Iout
 ) {
     GENIECLUST_ASSERT(xc <= yc);
 
     std::vector<bool> column_used(yc, false);
 
-    ssize_t retval = linear_sum_assignment(
+    Py_ssize_t retval = linear_sum_assignment(
         C, xc, yc, Iout, /*minimise*/false
     );
     GENIECLUST_ASSERT(retval == 0);
 
     // only Iout[0]..Iout[xc-1] are set
-    ssize_t i;
+    Py_ssize_t i;
     for (i=0; i<xc; ++i) {
         column_used[ Iout[i] ] = true;
     }
 
     // the remainder:
-    for (ssize_t k=0; k<yc; ++k) {
+    for (Py_ssize_t k=0; k<yc; ++k) {
         if (!column_used[k]) {
             column_used[k] = true;
             Iout[i] = k;
@@ -180,42 +180,42 @@ void Cnormalizing_permutation(
  */
 template<class T>
 void Capply_pivoting(
-    const T* C, ssize_t xc, ssize_t yc, T* Cout/*, bool use_sum=false*/
+    const T* C, Py_ssize_t xc, Py_ssize_t yc, T* Cout/*, bool use_sum=false*/
 ) {
     GENIECLUST_ASSERT(xc <= yc);
 
 //     if (use_sum) {
 
-    std::vector<ssize_t> output_col4row(yc);
+    std::vector<Py_ssize_t> output_col4row(yc);
 
     Cnormalizing_permutation(C, xc, yc, /*retval*/output_col4row.data());
 
-    ssize_t i;
+    Py_ssize_t i;
     for (i=0; i<yc; ++i) {
-        for (ssize_t j=0; j<xc; ++j)
+        for (Py_ssize_t j=0; j<xc; ++j)
             Cout[yc*j+i] = C[yc*j+output_col4row[i]];
     }
 
 //     }
 //     WARNING: not tested yet
 //     else { // use max
-//         for (ssize_t ij=0; ij<xc*yc; ++ij)
+//         for (Py_ssize_t ij=0; ij<xc*yc; ++ij)
 //             Cout[ij] = C[ij];
 //
-//         for (ssize_t i=0; i<xc-1; ++i) {
-//             ssize_t wi = i, wj = i;
+//         for (Py_ssize_t i=0; i<xc-1; ++i) {
+//             Py_ssize_t wi = i, wj = i;
 //
-//             for (ssize_t ni=i; ni<xc; ++ni) {
-//                 for (ssize_t nj=i; nj<yc; ++nj) {
+//             for (Py_ssize_t ni=i; ni<xc; ++ni) {
+//                 for (Py_ssize_t nj=i; nj<yc; ++nj) {
 //                 // find wi, wj = argmax C[ni,nj]
 //                 if (C[wi*yc+wj] < C[ni*yc+nj]) { wi = ni; wj = nj; }
 //             }
 //             // swap columns i and wj
-//             for (ssize_t j=0; j<xc; ++j) {
+//             for (Py_ssize_t j=0; j<xc; ++j) {
 //                 std::swap(C[j*yc+i], C[j*yc+wj]);
 //             }
 //             // swap rows i and wi
-//             for (ssize_t k=0; k<yc; ++k) {
+//             for (Py_ssize_t k=0; k<yc; ++k) {
 //                 std::swap(C[i*yc+k], C[wi*yc+k]);
 //             }
 //         }
@@ -240,14 +240,14 @@ void Capply_pivoting(
  * The elements in C are modified in-place.
  */
 template<class T>
-void Ccontingency_table(T* Cout, ssize_t xc, ssize_t yc,
+void Ccontingency_table(T* Cout, Py_ssize_t xc, Py_ssize_t yc,
         T xmin, T ymin,
-        const T* x, const T* y, ssize_t n)
+        const T* x, const T* y, Py_ssize_t n)
 {
-    for (ssize_t j=0; j<xc*yc; ++j)
+    for (Py_ssize_t j=0; j<xc*yc; ++j)
         Cout[j] = 0;
 
-    for (ssize_t i=0; i<n; ++i) {
+    for (Py_ssize_t i=0; i<n; ++i) {
         GENIECLUST_ASSERT(   0 <= (x[i]-xmin)*yc +(y[i]-ymin));
         GENIECLUST_ASSERT(xc*yc > (x[i]-xmin)*yc +(y[i]-ymin));
         Cout[(x[i]-xmin)*yc +(y[i]-ymin)]++;
@@ -272,26 +272,26 @@ void Ccontingency_table(T* Cout, ssize_t xc, ssize_t yc,
  */
 template<class T>
 CComparePartitionsPairsResult Ccompare_partitions_pairs(const T* C,
-    ssize_t xc, ssize_t yc)
+    Py_ssize_t xc, Py_ssize_t yc)
 {
     double n = 0.0; // total sum (length of the underlying x and y = number of points)
-    for (ssize_t ij=0; ij<xc*yc; ++ij)
+    for (Py_ssize_t ij=0; ij<xc*yc; ++ij)
         n += C[ij];
 
     double sum_comb_x = 0.0, sum_comb_y = 0.0, sum_comb = 0.0;
 
-    for (ssize_t i=0; i<xc; ++i) {
+    for (Py_ssize_t i=0; i<xc; ++i) {
         double t = 0.0;
-        for (ssize_t j=0; j<yc; ++j) {
+        for (Py_ssize_t j=0; j<yc; ++j) {
             t += C[i*yc+j];
             sum_comb += Ccomb2(C[i*yc+j]);
         }
         sum_comb_x += Ccomb2(t);
     }
 
-    for (ssize_t j=0; j<yc; ++j) {
+    for (Py_ssize_t j=0; j<yc; ++j) {
         double t = 0.0;
-        for (ssize_t i=0; i<xc; ++i) {
+        for (Py_ssize_t i=0; i<xc; ++i) {
             t += C[i*yc+j];
         }
         sum_comb_y += Ccomb2(t);
@@ -333,10 +333,10 @@ CComparePartitionsPairsResult Ccompare_partitions_pairs(const T* C,
  */
 template<class T>
 CComparePartitionsInfoResult Ccompare_partitions_info(const T* C,
-    ssize_t xc, ssize_t yc)
+    Py_ssize_t xc, Py_ssize_t yc)
 {
     double n = 0.0; // total sum (length of the underlying x and y = number of points)
-    for (ssize_t ij=0; ij<xc*yc; ++ij)
+    for (Py_ssize_t ij=0; ij<xc*yc; ++ij)
         n += C[ij];
 
     std::vector<double> sum_x(xc);
@@ -344,9 +344,9 @@ CComparePartitionsInfoResult Ccompare_partitions_info(const T* C,
 
     double h_x = 0.0, h_y = 0.0, h_x_cond_y = 0.0, h_x_y = 0.0;
 
-    for (ssize_t i=0; i<xc; ++i) {
+    for (Py_ssize_t i=0; i<xc; ++i) {
         double t = 0.0;
-        for (ssize_t j=0; j<yc; ++j) {
+        for (Py_ssize_t j=0; j<yc; ++j) {
             if (C[i*yc+j] > 0) h_x_y += C[i*yc+j]*std::log((double)C[i*yc+j]/(double)n);
             t += C[i*yc+j];
         }
@@ -354,9 +354,9 @@ CComparePartitionsInfoResult Ccompare_partitions_info(const T* C,
         if (t > 0) h_y += t*std::log((double)t/(double)n);
     }
 
-    for (ssize_t j=0; j<yc; ++j) {
+    for (Py_ssize_t j=0; j<yc; ++j) {
         double t = 0.0;
-        for (ssize_t i=0; i<xc; ++i) {
+        for (Py_ssize_t i=0; i<xc; ++i) {
             if (C[i*yc+j] > 0) h_x_cond_y += C[i*yc+j]*std::log((double)C[i*yc+j]/sum_x[i]);
             t += C[i*yc+j];
         }
@@ -370,13 +370,13 @@ CComparePartitionsInfoResult Ccompare_partitions_info(const T* C,
     h_x_y = -h_x_y/(double)n;
 
     double e_mi = 0.0;
-    for (ssize_t i=0; i<xc; ++i) {
+    for (Py_ssize_t i=0; i<xc; ++i) {
         double fac0 = lgamma(sum_x[i]+1.0)+lgamma(n-sum_x[i]+1.0)-lgamma(n+1.0);
-        for (ssize_t j=0; j<yc; ++j) {
+        for (Py_ssize_t j=0; j<yc; ++j) {
             double fac1 = std::log((double)n/sum_x[i]/sum_y[j]);
             double fac2 = fac0+lgamma(sum_y[j]+1.0)+lgamma(n-sum_y[j]+1.0);
 
-            for (ssize_t nij=std::max(1.0, sum_x[i]+sum_y[j]-n);
+            for (Py_ssize_t nij=std::max(1.0, sum_x[i]+sum_y[j]-n);
                         nij<=std::min(sum_x[i],sum_y[j]); nij++) {
                 double fac3 = fac2;
                 fac3 -= lgamma(nij+1.0);
@@ -403,7 +403,7 @@ CComparePartitionsInfoResult Ccompare_partitions_info(const T* C,
 
 /*! Computes the normalised accuracy score between two partitions
  *
- *  Normalised accuracy is (Accuracy(C[:,sigma])-1.0/yc)/(1.0-1.0/yc),
+ *  Normalised accuracy is (Accuracy(C[:,sigma])-1.0/max(xc,yc))/(1.0-1.0/max(xc,yc)),
  *  where C[:,sigma] is a version of the input confusion matrix
  *  with columns permuted based on the solution to the
  *  maximal linear sum assignment problem.
@@ -422,33 +422,44 @@ CComparePartitionsInfoResult Ccompare_partitions_info(const T* C,
  *  Meila M., Heckerman D., An experimental comparison of model-based clustering
  *  methods, Machine Learning 42, 2001, pp. 9--29, doi:10.1023/A:1007648401407.
  *
+ *  Gagolewski M., Adjusted asymmetric accuracy: A well-behaving external
+ *  cluster validity measure, 2022, submitted for publication.
+ *  URL: https://arxiv.org/pdf/2209.02935.pdf
+ *
  *
  *  @param C a c_contiguous confusion matrix of size xc*yc
- *  @param xc number of rows in C, xc <= yc
+ *  @param xc number of rows in C
  *  @param yc number of columns in C
  *
  *  @return the computed score
  */
 template<class T>
-double Ccompare_partitions_nacc(const T* C, ssize_t xc, ssize_t yc)
+double Ccompare_partitions_nacc(const T* C, Py_ssize_t xc, Py_ssize_t yc)
 {
-    GENIECLUST_ASSERT(xc <= yc);
-
     double n = 0.0; // total sum (length of the underlying x and y = number of points)
-    for (ssize_t ij=0; ij<xc*yc; ++ij)
+    for (Py_ssize_t ij=0; ij<xc*yc; ++ij)
         n += C[ij];
 
-    std::vector<ssize_t> output_col4row(xc);
+    // if C is not a square matrix, treat the missing columns as if they were filled with 0s
+    Py_ssize_t xyc = std::max(xc, yc);
+    std::vector<double> S(xyc*xyc, 0);
+    for (Py_ssize_t i=0; i<xc; ++i) {
+        for (Py_ssize_t j=0; j<yc; ++j) {
+            S[i*xyc+j] = (double)C[i*yc+j];
+        }
+    }
 
-    ssize_t retval = linear_sum_assignment(C, xc, yc, output_col4row.data(), false); // minimise=false
+    std::vector<Py_ssize_t> output_col4row(xyc);
+
+    Py_ssize_t retval = linear_sum_assignment(S.data(), xyc, xyc, output_col4row.data(), false); // minimise=false
     GENIECLUST_ASSERT(retval == 0);
 
     double t = 0.0;
-    for (ssize_t i=0; i<xc; ++i)
-        t += C[yc*i+output_col4row[i]];
+    for (Py_ssize_t i=0; i<xyc; ++i)
+        t += S[xyc*i+output_col4row[i]];
 
     double a = (double)t/(double)n;
-    return (a*yc-1.0)/(yc-1.0);
+    return (a*xyc-1.0)/(xyc-1.0);
 
 }
 
@@ -464,43 +475,44 @@ double Ccompare_partitions_nacc(const T* C, ssize_t xc, ssize_t yc)
  *
  *  Gagolewski M., Adjusted asymmetric accuracy: A well-behaving external
  *  cluster validity measure, 2022, submitted for publication.
+ *  URL: https://arxiv.org/pdf/2209.02935.pdf
  *
  *
  *  @param C a c_contiguous confusion matrix of size xc*yc
- *  @param xc number of rows in C, xc == yc
+ *  @param xc number of rows in C
  *  @param yc number of columns in C
  *
  *  @return the computed score
  */
 template<class T>
-double Ccompare_partitions_aaa(const T* C, ssize_t xc, ssize_t yc)
+double Ccompare_partitions_aaa(const T* C, Py_ssize_t xc, Py_ssize_t yc)
 {
-    GENIECLUST_ASSERT(xc == yc);
-
-    std::vector<double> sum_x(xc);
-    for (ssize_t i=0; i<xc; ++i) {
-        for (ssize_t j=0; j<yc; ++j) {
+    std::vector<double> sum_x(xc, 0);
+    for (Py_ssize_t i=0; i<xc; ++i) {
+        for (Py_ssize_t j=0; j<yc; ++j) {
             sum_x[i] += C[i*yc+j];
         }
     }
 
-    std::vector<double> S(xc*yc);
-    for (ssize_t i=0; i<xc; ++i) {
-        for (ssize_t j=0; j<yc; ++j) {
-            S[i*yc+j] = (double)C[i*yc+j]/(double)sum_x[i];
+    // if xc>yc, treat C as if its missing columns were filled with 0s
+    Py_ssize_t yc2 = std::max(xc, yc);
+
+    std::vector<double> S(xc*yc2, 0);
+    for (Py_ssize_t i=0; i<xc; ++i) {
+        for (Py_ssize_t j=0; j<yc; ++j) {
+            S[i*yc2+j] = (double)C[i*yc+j]/(double)sum_x[i];
         }
     }
 
-    std::vector<ssize_t> output_col4row2(xc);
-    ssize_t retval = linear_sum_assignment(S.data(), xc, yc, output_col4row2.data(), false); // minimise=false
+    std::vector<Py_ssize_t> output_col4row2(xc);
+    Py_ssize_t retval = linear_sum_assignment(S.data(), xc, yc2, output_col4row2.data(), false); // minimise=false
     GENIECLUST_ASSERT(retval == 0);
 
     double t = 0.0;
-    for (ssize_t i=0; i<xc; ++i)
-        t += S[yc*i+output_col4row2[i]];
+    for (Py_ssize_t i=0; i<xc; ++i)
+        t += S[yc2*i+output_col4row2[i]];
 
-    return (t-1.0)/(yc-1.0);
-
+    return (t-1.0)/(xc-1.0);
 }
 
 
@@ -515,62 +527,65 @@ double Ccompare_partitions_aaa(const T* C, ssize_t xc, ssize_t yc)
  *
  *  Rezaei M., Franti P., Set matching measures for external cluster validity,
  *  IEEE Transactions on Knowledge and Data Mining 28(8), 2016, pp. 2173-2186,
- *  doi:10.1109/TKDE.2016.2551240
+ *  DOI: 10.1109/TKDE.2016.2551240
  *
  *
  *  @param C a c_contiguous confusion matrix of size xc*yc
- *  @param xc number of rows in C, xc <= yc
+ *  @param xc number of rows in C
  *  @param yc number of columns in C
  *
  *  @return the computed scores
  */
 template<class T>
 CCompareSetMatchingResult Ccompare_partitions_psi(
-    const T* C, ssize_t xc, ssize_t yc
+    const T* C, Py_ssize_t xc, Py_ssize_t yc
 ) {
-    GENIECLUST_ASSERT(xc <= yc);
 
     double n = 0.0; // total sum (length of the underlying x and y = number of points)
-    for (ssize_t ij=0; ij<xc*yc; ++ij)
+    for (Py_ssize_t ij=0; ij<xc*yc; ++ij)
         n += C[ij];
 
-    std::vector<double> sum_x(xc);
-    std::vector<double> sum_y(yc);
-    for (ssize_t i=0; i<xc; ++i) {
-        for (ssize_t j=0; j<yc; ++j) {
+    // if C is not a square matrix, treat the missing columns as if they were filled with 0s
+    Py_ssize_t xyc = std::max(xc, yc);
+
+    std::vector<double> sum_x(xyc, 0);
+    std::vector<double> sum_y(xyc, 0);
+    for (Py_ssize_t i=0; i<xc; ++i) {
+        for (Py_ssize_t j=0; j<yc; ++j) {
             sum_x[i] += C[i*yc+j];
             sum_y[j] += C[i*yc+j];
         }
     }
 
-    std::vector<double> S(xc*yc);
-    for (ssize_t i=0; i<xc; ++i) {
-        for (ssize_t j=0; j<yc; ++j) {
-            S[i*yc+j] = (double)C[i*yc+j]/(double)std::max(sum_x[i], sum_y[j]);
+    std::vector<double> S(xyc*xyc, 0);
+    for (Py_ssize_t i=0; i<xc; ++i) {
+        for (Py_ssize_t j=0; j<yc; ++j) {
+            S[i*xyc+j] = (double)C[i*yc+j]/(double)std::max(sum_x[i], sum_y[j]);
         }
     }
-    std::vector<ssize_t> output_col4row2(xc);
-    ssize_t retval = linear_sum_assignment(S.data(), xc, yc, output_col4row2.data(), false); // minimise=false
+
+    std::vector<Py_ssize_t> output_col4row2(xyc);
+    Py_ssize_t retval = linear_sum_assignment(S.data(), xyc, xyc, output_col4row2.data(), false); // minimise=false
     GENIECLUST_ASSERT(retval == 0);
 
     double s = 0.0;
-    for (ssize_t i=0; i<xc; ++i)
-        s += S[yc*i+output_col4row2[i]];
+    for (Py_ssize_t i=0; i<xyc; ++i)
+        s += S[xyc*i+output_col4row2[i]];
 
     double es;
     std::sort(sum_x.begin(), sum_x.end());
     std::sort(sum_y.begin(), sum_y.end());
     es = 0.0;
-    for (ssize_t i=0; i<xc; ++i)
-        es += sum_y[yc-i-1]*sum_x[xc-i-1]/(double)std::max(sum_x[xc-i-1], sum_y[yc-i-1]);
+    for (Py_ssize_t i=0; i<xyc; ++i)
+        es += sum_y[xyc-i-1]*sum_x[xyc-i-1]/(double)std::max(sum_x[xyc-i-1], sum_y[xyc-i-1]);
     es /= (double)n;
 
     CCompareSetMatchingResult res;
 
-    res.psi  = (s-es)/(yc-es);
+    res.psi  = (s-es)/(xyc-es);
     if (res.psi<0.0) res.psi = 0.0;
 
-    res.spsi  = (s-1.0)/(yc-1.0);
+    res.spsi  = (s-1.0)/(xyc-1.0);
     if (res.spsi<0.0) res.spsi = 0.0;
 
     return res;

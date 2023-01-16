@@ -28,7 +28,7 @@
 #'
 #'
 #' \code{adjusted_asymmetric_accuracy()} (Gagolewski, 2022)
-#' only accepts \eqn{K = L}. It is an external cluster validity measure
+#' is an external cluster validity measure
 #' which assumes that the label vector \code{x} (or rows in the confusion
 #' matrix) represents the reference (ground truth) partition.
 #' It is a corrected-for-chance summary of the proportion of correctly
@@ -39,15 +39,15 @@
 #' where \eqn{C} is the confusion matrix.
 #'
 #' \code{normalized_accuracy()} is defined as
-#' \eqn{(Accuracy(C_\sigma)-1/L)/(1-1/L)}, where \eqn{C_\sigma} is a version
-#' of the confusion matrix for given \code{x} and \code{y},
-#' \eqn{K \leq L}, with columns permuted based on the solution to the
+#' \eqn{(Accuracy(C_\sigma)-1/max(K,L))/(1-1/max(K,L))}, where \eqn{C_\sigma} is a version
+#' of the confusion matrix for given \code{x} and \code{y}
+#' with columns permuted based on the solution to the
 #' maximal linear sum assignment problem.
 #' The \eqn{Accuracy(C_\sigma)} part is sometimes referred to as
 #' set-matching classification rate or pivoted accuracy.
 #'
 #' \code{pair_sets_index()} gives the Pair Sets Index (PSI)
-#' adjusted for chance (Rezaei, Franti, 2016), \eqn{K \leq L}.
+#' adjusted for chance (Rezaei, Franti, 2016).
 #' Pairing is based on the solution to the linear sum assignment problem
 #' of a transformed version of the confusion matrix.
 #' Its simplified version assumes E=1 in the definition of the index,
@@ -92,7 +92,8 @@
 #' 2022, \url{https://clustering-benchmarks.gagolewski.com}.
 #'
 #' Gagolewski M., Adjusted asymmetric accuracy: A well-behaving external
-#' cluster validity measure, 2022, submitted for publication.
+#' cluster validity measure, 2022, under review (preprint),
+#' \doi{10.48550/arXiv.2209.02935}.
 #'
 #' Hubert L., Arabie P., Comparing partitions,
 #' \emph{Journal of Classification} 2(1), 1985, 193-218, esp. Eqs. (2) and (4).
@@ -152,74 +153,74 @@
 #' normalized_confusion_matrix(y_true, y_pred)
 #' normalizing_permutation(y_true, y_pred)
 #'
-#' @rdname comparing_partitions
-#' @name comparing_partitions
+#' @rdname compare_partitions
+#' @name compare_partitions
 #' @export
 adjusted_asymmetric_accuracy <- function(x, y = NULL) {
     .Call(`_genieclust_adjusted_asymmetric_accuracy`, x, y)
 }
 
-#' @rdname comparing_partitions
+#' @rdname compare_partitions
 #' @export
 normalized_accuracy <- function(x, y = NULL) {
     .Call(`_genieclust_normalized_accuracy`, x, y)
 }
 
-#' @rdname comparing_partitions
+#' @rdname compare_partitions
 #' @export
 pair_sets_index <- function(x, y = NULL, simplified = FALSE) {
     .Call(`_genieclust_pair_sets_index`, x, y, simplified)
 }
 
-#' @rdname comparing_partitions
+#' @rdname compare_partitions
 #' @export
 adjusted_rand_score <- function(x, y = NULL) {
     .Call(`_genieclust_adjusted_rand_score`, x, y)
 }
 
-#' @rdname comparing_partitions
+#' @rdname compare_partitions
 #' @export
 rand_score <- function(x, y = NULL) {
     .Call(`_genieclust_rand_score`, x, y)
 }
 
-#' @rdname comparing_partitions
+#' @rdname compare_partitions
 #' @export
 adjusted_fm_score <- function(x, y = NULL) {
     .Call(`_genieclust_adjusted_fm_score`, x, y)
 }
 
-#' @rdname comparing_partitions
+#' @rdname compare_partitions
 #' @export
 fm_score <- function(x, y = NULL) {
     .Call(`_genieclust_fm_score`, x, y)
 }
 
-#' @rdname comparing_partitions
+#' @rdname compare_partitions
 #' @export
 mi_score <- function(x, y = NULL) {
     .Call(`_genieclust_mi_score`, x, y)
 }
 
-#' @rdname comparing_partitions
+#' @rdname compare_partitions
 #' @export
 normalized_mi_score <- function(x, y = NULL) {
     .Call(`_genieclust_normalized_mi_score`, x, y)
 }
 
-#' @rdname comparing_partitions
+#' @rdname compare_partitions
 #' @export
 adjusted_mi_score <- function(x, y = NULL) {
     .Call(`_genieclust_adjusted_mi_score`, x, y)
 }
 
-#' @rdname comparing_partitions
+#' @rdname compare_partitions
 #' @export
 normalized_confusion_matrix <- function(x, y = NULL) {
     .Call(`_genieclust_normalized_confusion_matrix`, x, y)
 }
 
-#' @rdname comparing_partitions
+#' @rdname compare_partitions
 #' @export
 normalizing_permutation <- function(x, y = NULL) {
     .Call(`_genieclust_normalizing_permutation`, x, y)
@@ -315,56 +316,56 @@ normalizing_permutation <- function(x, y = NULL) {
 #' calinski_harabasz_index(X, y)  # good
 #' calinski_harabasz_index(X, sample(1:3, nrow(X), replace=TRUE))  # bad
 #'
-#' @name cluster_validity_measures
-#' @rdname cluster_validity_measures
+#' @name cluster_validity
+#' @rdname cluster_validity
 #' @export
 calinski_harabasz_index <- function(X, y) {
     .Call(`_genieclust_calinski_harabasz_index`, X, y)
 }
 
-#' @rdname cluster_validity_measures
+#' @rdname cluster_validity
 #' @export
 dunnowa_index <- function(X, y, M = 25L, owa_numerator = "SMin:5", owa_denominator = "Const") {
     .Call(`_genieclust_dunnowa_index`, X, y, M, owa_numerator, owa_denominator)
 }
 
-#' @rdname cluster_validity_measures
+#' @rdname cluster_validity
 #' @export
 generalised_dunn_index <- function(X, y, lowercase_d, uppercase_d) {
     .Call(`_genieclust_generalised_dunn_index`, X, y, lowercase_d, uppercase_d)
 }
 
-#' @rdname cluster_validity_measures
+#' @rdname cluster_validity
 #' @export
 negated_ball_hall_index <- function(X, y) {
     .Call(`_genieclust_negated_ball_hall_index`, X, y)
 }
 
-#' @rdname cluster_validity_measures
+#' @rdname cluster_validity
 #' @export
 negated_davies_bouldin_index <- function(X, y) {
     .Call(`_genieclust_negated_davies_bouldin_index`, X, y)
 }
 
-#' @rdname cluster_validity_measures
+#' @rdname cluster_validity
 #' @export
 negated_wcss_index <- function(X, y) {
     .Call(`_genieclust_negated_wcss_index`, X, y)
 }
 
-#' @rdname cluster_validity_measures
+#' @rdname cluster_validity
 #' @export
 silhouette_index <- function(X, y) {
     .Call(`_genieclust_silhouette_index`, X, y)
 }
 
-#' @rdname cluster_validity_measures
+#' @rdname cluster_validity
 #' @export
 silhouette_w_index <- function(X, y) {
     .Call(`_genieclust_silhouette_w_index`, X, y)
 }
 
-#' @rdname cluster_validity_measures
+#' @rdname cluster_validity
 #' @export
 wcnn_index <- function(X, y, M = 25L) {
     .Call(`_genieclust_wcnn_index`, X, y, M)
@@ -474,6 +475,7 @@ wcnn_index <- function(X, y, M = 25L) {
 #' devergottini_index(c(7, 0, 3, 0, 0))
 #' devergottini_index(c(6, 0, 3, 1, 0))
 #'
+#' @name inequity
 #' @rdname inequity
 #' @export
 gini_index <- function(x) {

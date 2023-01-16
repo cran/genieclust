@@ -53,15 +53,15 @@ using namespace Rcpp;
  * @param K [out] the number of clusters
  * @return vector
  */
-std::vector<ssize_t> translateLabels_fromR(const Rcpp::NumericVector& x, ssize_t& K)
+std::vector<Py_ssize_t> translateLabels_fromR(const Rcpp::NumericVector& x, Py_ssize_t& K)
 {
     size_t n = x.size();
-    std::vector<ssize_t> ret(n);
+    std::vector<Py_ssize_t> ret(n);
     K = 0;
     for (size_t i=0; i<n; ++i) {
         int xi = (int)x[i];
         if (xi < 1) Rf_error("All elements in a label vector must be >= 1.");
-        ret[i] = (ssize_t)(xi-1); // 1-based -> 0-based
+        ret[i] = (Py_ssize_t)(xi-1); // 1-based -> 0-based
 
         if (K < xi) K = xi;  // determine the max(x)
     }
@@ -160,34 +160,34 @@ std::vector<ssize_t> translateLabels_fromR(const Rcpp::NumericVector& x, ssize_t
 //' calinski_harabasz_index(X, y)  # good
 //' calinski_harabasz_index(X, sample(1:3, nrow(X), replace=TRUE))  # bad
 //'
-//' @name cluster_validity_measures
-//' @rdname cluster_validity_measures
+//' @name cluster_validity
+//' @rdname cluster_validity
 //' @export
 // [[Rcpp::export]]
 double calinski_harabasz_index(NumericMatrix X, NumericVector y)
 {
-    ssize_t K;
-    std::vector<ssize_t> _y = translateLabels_fromR(y, /*out*/K);
+    Py_ssize_t K;
+    std::vector<Py_ssize_t> _y = translateLabels_fromR(y, /*out*/K);
     CMatrix<FLOAT_T> _X(REAL(SEXP(X)), X.nrow(), X.ncol(), false);
     if (_X.nrow() < 1 || _X.nrow() != _y.size())
         Rf_error("Incompatible X and y");
 
-    CalinskiHarabaszIndex ind(_X, (ssize_t)K);
+    CalinskiHarabaszIndex ind(_X, (Py_ssize_t)K);
     ind.set_labels(_y);
 
     return (double)ind.compute();
 }
 
 
-//' @rdname cluster_validity_measures
+//' @rdname cluster_validity
 //' @export
 // [[Rcpp::export]]
 double dunnowa_index(NumericMatrix X, NumericVector y, int M=25,
                 Rcpp::String owa_numerator="SMin:5",
                 Rcpp::String owa_denominator="Const")
 {
-    ssize_t K;
-    std::vector<ssize_t> _y = translateLabels_fromR(y, /*out*/K);
+    Py_ssize_t K;
+    std::vector<Py_ssize_t> _y = translateLabels_fromR(y, /*out*/K);
     CMatrix<FLOAT_T> _X(REAL(SEXP(X)), X.nrow(), X.ncol(), false);
     if (_X.nrow() < 1 || _X.nrow() != _y.size())
         Rf_error("Incompatible X and y");
@@ -202,7 +202,7 @@ double dunnowa_index(NumericMatrix X, NumericVector y, int M=25,
         Rf_error("invalid OWA operator specifier");
     }
 
-    DuNNOWAIndex ind(_X, (ssize_t)K, false, M, _owa_numerator, _owa_denominator);
+    DuNNOWAIndex ind(_X, (Py_ssize_t)K, false, M, _owa_numerator, _owa_denominator);
     ind.set_labels(_y);
 
     return (double)ind.compute();
@@ -210,14 +210,14 @@ double dunnowa_index(NumericMatrix X, NumericVector y, int M=25,
 
 
 
-//' @rdname cluster_validity_measures
+//' @rdname cluster_validity
 //' @export
 // [[Rcpp::export]]
 double generalised_dunn_index(NumericMatrix X, NumericVector y,
     int lowercase_d, int uppercase_d)
 {
-    ssize_t K;
-    std::vector<ssize_t> _y = translateLabels_fromR(y, /*out*/K);
+    Py_ssize_t K;
+    std::vector<Py_ssize_t> _y = translateLabels_fromR(y, /*out*/K);
     CMatrix<FLOAT_T> _X(REAL(SEXP(X)), X.nrow(), X.ncol(), false);
     if (_X.nrow() < 1 || _X.nrow() != _y.size())
         Rf_error("Incompatible X and y");
@@ -266,7 +266,7 @@ double generalised_dunn_index(NumericMatrix X, NumericVector y,
     );
 
     if (areCentroidsNeeded) {
-        GeneralizedDunnIndexCentroidBased ind(_X, (ssize_t)K,
+        GeneralizedDunnIndexCentroidBased ind(_X, (Py_ssize_t)K,
             lowercase_deltaFactory, uppercase_deltaFactory);
 
         delete lowercase_deltaFactory;
@@ -277,7 +277,7 @@ double generalised_dunn_index(NumericMatrix X, NumericVector y,
         return (double)ind.compute();
     }
     else {
-        GeneralizedDunnIndex ind(_X, (ssize_t)K,
+        GeneralizedDunnIndex ind(_X, (Py_ssize_t)K,
             lowercase_deltaFactory, uppercase_deltaFactory);
 
         delete lowercase_deltaFactory;
@@ -290,103 +290,103 @@ double generalised_dunn_index(NumericMatrix X, NumericVector y,
 }
 
 
-//' @rdname cluster_validity_measures
+//' @rdname cluster_validity
 //' @export
 // [[Rcpp::export]]
 double negated_ball_hall_index(NumericMatrix X, NumericVector y)
 {
-    ssize_t K;
-    std::vector<ssize_t> _y = translateLabels_fromR(y, /*out*/K);
+    Py_ssize_t K;
+    std::vector<Py_ssize_t> _y = translateLabels_fromR(y, /*out*/K);
     CMatrix<FLOAT_T> _X(REAL(SEXP(X)), X.nrow(), X.ncol(), false);
     if (_X.nrow() < 1 || _X.nrow() != _y.size())
         Rf_error("Incompatible X and y");
 
-    WCSSIndex ind(_X, (ssize_t)K, false, true/*weighted*/);
+    WCSSIndex ind(_X, (Py_ssize_t)K, false, true/*weighted*/);
     ind.set_labels(_y);
 
     return (double)ind.compute();
 }
 
 
-//' @rdname cluster_validity_measures
+//' @rdname cluster_validity
 //' @export
 // [[Rcpp::export]]
 double negated_davies_bouldin_index(NumericMatrix X, NumericVector y)
 {
-    ssize_t K;
-    std::vector<ssize_t> _y = translateLabels_fromR(y, /*out*/K);
+    Py_ssize_t K;
+    std::vector<Py_ssize_t> _y = translateLabels_fromR(y, /*out*/K);
     CMatrix<FLOAT_T> _X(REAL(SEXP(X)), X.nrow(), X.ncol(), false);
     if (_X.nrow() < 1 || _X.nrow() != _y.size())
         Rf_error("Incompatible X and y");
 
-    DaviesBouldinIndex ind(_X, (ssize_t)K);
+    DaviesBouldinIndex ind(_X, (Py_ssize_t)K);
     ind.set_labels(_y);
 
     return (double)ind.compute();
 }
 
 
-//' @rdname cluster_validity_measures
+//' @rdname cluster_validity
 //' @export
 // [[Rcpp::export]]
 double negated_wcss_index(NumericMatrix X, NumericVector y)
 {
-    ssize_t K;
-    std::vector<ssize_t> _y = translateLabels_fromR(y, /*out*/K);
+    Py_ssize_t K;
+    std::vector<Py_ssize_t> _y = translateLabels_fromR(y, /*out*/K);
     CMatrix<FLOAT_T> _X(REAL(SEXP(X)), X.nrow(), X.ncol(), false);
     if (_X.nrow() < 1 || _X.nrow() != _y.size())
         Rf_error("Incompatible X and y");
 
-    WCSSIndex ind(_X, (ssize_t)K, false, false/*not weighted*/);
+    WCSSIndex ind(_X, (Py_ssize_t)K, false, false/*not weighted*/);
     ind.set_labels(_y);
 
     return (double)ind.compute();
 }
 
 
-//' @rdname cluster_validity_measures
+//' @rdname cluster_validity
 //' @export
 // [[Rcpp::export]]
 double silhouette_index(NumericMatrix X, NumericVector y)
 {
-    ssize_t K;
-    std::vector<ssize_t> _y = translateLabels_fromR(y, /*out*/K);
+    Py_ssize_t K;
+    std::vector<Py_ssize_t> _y = translateLabels_fromR(y, /*out*/K);
     CMatrix<FLOAT_T> _X(REAL(SEXP(X)), X.nrow(), X.ncol(), false);
     if (_X.nrow() < 1 || _X.nrow() != _y.size())
         Rf_error("Incompatible X and y");
 
-    SilhouetteIndex ind(_X, (ssize_t)K, false, false);
+    SilhouetteIndex ind(_X, (Py_ssize_t)K, false, false);
     ind.set_labels(_y);
 
     return (double)ind.compute();
 }
 
 
-//' @rdname cluster_validity_measures
+//' @rdname cluster_validity
 //' @export
 // [[Rcpp::export]]
 double silhouette_w_index(NumericMatrix X, NumericVector y)
 {
-    ssize_t K;
-    std::vector<ssize_t> _y = translateLabels_fromR(y, /*out*/K);
+    Py_ssize_t K;
+    std::vector<Py_ssize_t> _y = translateLabels_fromR(y, /*out*/K);
     CMatrix<FLOAT_T> _X(REAL(SEXP(X)), X.nrow(), X.ncol(), false);
     if (_X.nrow() < 1 || _X.nrow() != _y.size())
         Rf_error("Incompatible X and y");
 
-    SilhouetteIndex ind(_X, (ssize_t)K, false, true);
+    SilhouetteIndex ind(_X, (Py_ssize_t)K, false, true);
     ind.set_labels(_y);
 
     return (double)ind.compute();
 }
 
 
-//' @rdname cluster_validity_measures
+//' @rdname cluster_validity
 //' @export
 // [[Rcpp::export]]
 double wcnn_index(NumericMatrix X, NumericVector y, int M=25)
 {
-    ssize_t K;
-    std::vector<ssize_t> _y = translateLabels_fromR(y, /*out*/K);
+    Py_ssize_t K;
+    std::vector<Py_ssize_t> _y = translateLabels_fromR(y, /*out*/K);
     CMatrix<FLOAT_T> _X(REAL(SEXP(X)), X.nrow(), X.ncol(), false);
     if (_X.nrow() < 1 || _X.nrow() != _y.size())
         Rf_error("Incompatible X and y");
@@ -394,7 +394,7 @@ double wcnn_index(NumericMatrix X, NumericVector y, int M=25)
     if (M <= 0)    // M = min(n-1, M) in the constructor
         Rf_error("M must be positive.");
 
-    WCNNIndex ind(_X, (ssize_t)K, false, M);
+    WCNNIndex ind(_X, (Py_ssize_t)K, false, M);
     ind.set_labels(_y);
 
     return (double)ind.compute();

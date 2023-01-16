@@ -31,9 +31,9 @@ using namespace Rcpp;
  *  @return flat, contiguous c_style vector representing the contingency table
  *   with xc rows and yc columns
  */
-std::vector<int> get_contingency_matrix(RObject x, RObject y,
-                                          ssize_t* xc, ssize_t* yc)
-{
+std::vector<int> get_contingency_matrix(
+    RObject x, RObject y, Py_ssize_t* xc, Py_ssize_t* yc
+) {
     if (Rf_isMatrix(x)) {
         if (!Rf_isNull(y))
             stop("if x is a contingency matrix, y must be NULL");
@@ -44,9 +44,9 @@ std::vector<int> get_contingency_matrix(RObject x, RObject y,
         *xc = X.nrow();
         *yc = X.ncol();
         std::vector<int> C((*xc)*(*yc));
-        ssize_t k=0;
-        for (ssize_t i=0; i<*xc; ++i)
-            for (ssize_t j=0; j<*yc; ++j)
+        Py_ssize_t k=0;
+        for (Py_ssize_t i=0; i<*xc; ++i)
+            for (Py_ssize_t j=0; j<*yc; ++j)
                 C[k++] = X(i, j); // Fortran -> C-style
         return C;
     }
@@ -61,11 +61,11 @@ std::vector<int> get_contingency_matrix(RObject x, RObject y,
         IntegerVector rx(x);
         IntegerVector ry(y);
 
-        ssize_t n = rx.size();
+        Py_ssize_t n = rx.size();
         if (ry.size() != n)
             stop("x and y must be of equal lengths");
 
-        for (ssize_t i=0; i<n; ++i) {
+        for (Py_ssize_t i=0; i<n; ++i) {
             if (rx[i] == NA_INTEGER || ry[i] == NA_INTEGER)
                 stop("missing values not allowed");
         }
@@ -114,7 +114,7 @@ std::vector<int> get_contingency_matrix(RObject x, RObject y,
 //'
 //'
 //' \code{adjusted_asymmetric_accuracy()} (Gagolewski, 2022)
-//' only accepts \eqn{K = L}. It is an external cluster validity measure
+//' is an external cluster validity measure
 //' which assumes that the label vector \code{x} (or rows in the confusion
 //' matrix) represents the reference (ground truth) partition.
 //' It is a corrected-for-chance summary of the proportion of correctly
@@ -125,15 +125,15 @@ std::vector<int> get_contingency_matrix(RObject x, RObject y,
 //' where \eqn{C} is the confusion matrix.
 //'
 //' \code{normalized_accuracy()} is defined as
-//' \eqn{(Accuracy(C_\sigma)-1/L)/(1-1/L)}, where \eqn{C_\sigma} is a version
-//' of the confusion matrix for given \code{x} and \code{y},
-//' \eqn{K \leq L}, with columns permuted based on the solution to the
+//' \eqn{(Accuracy(C_\sigma)-1/max(K,L))/(1-1/max(K,L))}, where \eqn{C_\sigma} is a version
+//' of the confusion matrix for given \code{x} and \code{y}
+//' with columns permuted based on the solution to the
 //' maximal linear sum assignment problem.
 //' The \eqn{Accuracy(C_\sigma)} part is sometimes referred to as
 //' set-matching classification rate or pivoted accuracy.
 //'
 //' \code{pair_sets_index()} gives the Pair Sets Index (PSI)
-//' adjusted for chance (Rezaei, Franti, 2016), \eqn{K \leq L}.
+//' adjusted for chance (Rezaei, Franti, 2016).
 //' Pairing is based on the solution to the linear sum assignment problem
 //' of a transformed version of the confusion matrix.
 //' Its simplified version assumes E=1 in the definition of the index,
@@ -178,7 +178,8 @@ std::vector<int> get_contingency_matrix(RObject x, RObject y,
 //' 2022, \url{https://clustering-benchmarks.gagolewski.com}.
 //'
 //' Gagolewski M., Adjusted asymmetric accuracy: A well-behaving external
-//' cluster validity measure, 2022, submitted for publication.
+//' cluster validity measure, 2022, under review (preprint),
+//' \doi{10.48550/arXiv.2209.02935}.
 //'
 //' Hubert L., Arabie P., Comparing partitions,
 //' \emph{Journal of Classification} 2(1), 1985, 193-218, esp. Eqs. (2) and (4).
@@ -238,13 +239,13 @@ std::vector<int> get_contingency_matrix(RObject x, RObject y,
 //' normalized_confusion_matrix(y_true, y_pred)
 //' normalizing_permutation(y_true, y_pred)
 //'
-//' @rdname comparing_partitions
-//' @name comparing_partitions
+//' @rdname compare_partitions
+//' @name compare_partitions
 //' @export
 //[[Rcpp::export]]
 double adjusted_asymmetric_accuracy(RObject x, RObject y=R_NilValue)
 {
-    ssize_t xc, yc;
+    Py_ssize_t xc, yc;
     std::vector<int> C(
         get_contingency_matrix(x, y, &xc, &yc)
     );
@@ -253,12 +254,12 @@ double adjusted_asymmetric_accuracy(RObject x, RObject y=R_NilValue)
 }
 
 
-//' @rdname comparing_partitions
+//' @rdname compare_partitions
 //' @export
 //[[Rcpp::export]]
 double normalized_accuracy(RObject x, RObject y=R_NilValue)
 {
-    ssize_t xc, yc;
+    Py_ssize_t xc, yc;
     std::vector<int> C(
         get_contingency_matrix(x, y, &xc, &yc)
     );
@@ -267,12 +268,12 @@ double normalized_accuracy(RObject x, RObject y=R_NilValue)
 }
 
 
-//' @rdname comparing_partitions
+//' @rdname compare_partitions
 //' @export
 //[[Rcpp::export]]
 double pair_sets_index(RObject x, RObject y=R_NilValue, bool simplified=false)
 {
-    ssize_t xc, yc;
+    Py_ssize_t xc, yc;
     std::vector<int> C(
         get_contingency_matrix(x, y, &xc, &yc)
     );
@@ -284,12 +285,12 @@ double pair_sets_index(RObject x, RObject y=R_NilValue, bool simplified=false)
 }
 
 
-//' @rdname comparing_partitions
+//' @rdname compare_partitions
 //' @export
 //[[Rcpp::export]]
 double adjusted_rand_score(RObject x, RObject y=R_NilValue)
 {
-    ssize_t xc, yc;
+    Py_ssize_t xc, yc;
     std::vector<int> C(
         get_contingency_matrix(x, y, &xc, &yc)
     );
@@ -298,12 +299,12 @@ double adjusted_rand_score(RObject x, RObject y=R_NilValue)
 }
 
 
-//' @rdname comparing_partitions
+//' @rdname compare_partitions
 //' @export
 //[[Rcpp::export]]
 double rand_score(RObject x, RObject y=R_NilValue)
 {
-    ssize_t xc, yc;
+    Py_ssize_t xc, yc;
     std::vector<int> C(
         get_contingency_matrix(x, y, &xc, &yc)
     );
@@ -312,12 +313,12 @@ double rand_score(RObject x, RObject y=R_NilValue)
 }
 
 
-//' @rdname comparing_partitions
+//' @rdname compare_partitions
 //' @export
 //[[Rcpp::export]]
 double adjusted_fm_score(RObject x, RObject y=R_NilValue)
 {
-    ssize_t xc, yc;
+    Py_ssize_t xc, yc;
     std::vector<int> C(
         get_contingency_matrix(x, y, &xc, &yc)
     );
@@ -326,12 +327,12 @@ double adjusted_fm_score(RObject x, RObject y=R_NilValue)
 }
 
 
-//' @rdname comparing_partitions
+//' @rdname compare_partitions
 //' @export
 //[[Rcpp::export]]
 double fm_score(RObject x, RObject y=R_NilValue)
 {
-    ssize_t xc, yc;
+    Py_ssize_t xc, yc;
     std::vector<int> C(
         get_contingency_matrix(x, y, &xc, &yc)
     );
@@ -340,12 +341,12 @@ double fm_score(RObject x, RObject y=R_NilValue)
 }
 
 
-//' @rdname comparing_partitions
+//' @rdname compare_partitions
 //' @export
 //[[Rcpp::export]]
 double mi_score(RObject x, RObject y=R_NilValue)
 {
-    ssize_t xc, yc;
+    Py_ssize_t xc, yc;
     std::vector<int> C(
         get_contingency_matrix(x, y, &xc, &yc)
     );
@@ -355,12 +356,12 @@ double mi_score(RObject x, RObject y=R_NilValue)
 
 
 
-//' @rdname comparing_partitions
+//' @rdname compare_partitions
 //' @export
 //[[Rcpp::export]]
 double normalized_mi_score(RObject x, RObject y=R_NilValue)
 {
-    ssize_t xc, yc;
+    Py_ssize_t xc, yc;
     std::vector<int> C(
         get_contingency_matrix(x, y, &xc, &yc)
     );
@@ -370,12 +371,12 @@ double normalized_mi_score(RObject x, RObject y=R_NilValue)
 
 
 
-//' @rdname comparing_partitions
+//' @rdname compare_partitions
 //' @export
 //[[Rcpp::export]]
 double adjusted_mi_score(RObject x, RObject y=R_NilValue)
 {
-    ssize_t xc, yc;
+    Py_ssize_t xc, yc;
     std::vector<int> C(
         get_contingency_matrix(x, y, &xc, &yc)
     );
@@ -385,12 +386,12 @@ double adjusted_mi_score(RObject x, RObject y=R_NilValue)
 
 
 
-//' @rdname comparing_partitions
+//' @rdname compare_partitions
 //' @export
 //[[Rcpp::export]]
 IntegerMatrix normalized_confusion_matrix(RObject x, RObject y=R_NilValue)
 {
-    ssize_t xc, yc;
+    Py_ssize_t xc, yc;
     std::vector<int> C(
         get_contingency_matrix(x, y, &xc, &yc)
     );
@@ -399,20 +400,20 @@ IntegerMatrix normalized_confusion_matrix(RObject x, RObject y=R_NilValue)
     Capply_pivoting(C.data(), xc, yc, C_out_Corder.data());
 
     IntegerMatrix Cout(xc, yc);
-    for (ssize_t i=0; i<xc; ++i)  // make Fortran order
-            for (ssize_t j=0; j<yc; ++j)
+    for (Py_ssize_t i=0; i<xc; ++i)  // make Fortran order
+            for (Py_ssize_t j=0; j<yc; ++j)
                 Cout(i, j) = C_out_Corder[j+i*yc];
     return Cout;
 }
 
 
 
-//' @rdname comparing_partitions
+//' @rdname compare_partitions
 //' @export
 //[[Rcpp::export]]
 IntegerVector normalizing_permutation(RObject x, RObject y=R_NilValue)
 {
-    ssize_t xc, yc;
+    Py_ssize_t xc, yc;
     std::vector<int> C(
         get_contingency_matrix(x, y, &xc, &yc)
     );
@@ -421,7 +422,7 @@ IntegerVector normalizing_permutation(RObject x, RObject y=R_NilValue)
 
     Cnormalizing_permutation(C.data(), xc, yc, INTEGER(SEXP(Iout)));
 
-    for (ssize_t j=0; j<yc; ++j)
+    for (Py_ssize_t j=0; j<yc; ++j)
         Iout[j]++; // 0-based -> 1-based
 
     return Iout;

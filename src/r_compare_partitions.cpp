@@ -1,6 +1,6 @@
 /*  Partition Similarity Scores
  *
- *  Copyleft (C) 2018-2022, Marek Gagolewski <https://www.gagolewski.com>
+ *  Copyleft (C) 2018-2023, Marek Gagolewski <https://www.gagolewski.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License
@@ -31,7 +31,7 @@ using namespace Rcpp;
  *  @return flat, contiguous c_style vector representing the contingency table
  *   with xc rows and yc columns
  */
-std::vector<int> get_contingency_matrix(
+std::vector<double> get_contingency_matrix(
     RObject x, RObject y, Py_ssize_t* xc, Py_ssize_t* yc
 ) {
     if (Rf_isMatrix(x)) {
@@ -40,10 +40,10 @@ std::vector<int> get_contingency_matrix(
         if (!(Rf_isInteger(x) | Rf_isReal(x)))
             stop("x must be of type numeric");
 
-        IntegerMatrix X(x);
+        NumericMatrix X(x);
         *xc = X.nrow();
         *yc = X.ncol();
-        std::vector<int> C((*xc)*(*yc));
+        std::vector<double> C((*xc)*(*yc));
         Py_ssize_t k=0;
         for (Py_ssize_t i=0; i<*xc; ++i)
             for (Py_ssize_t j=0; j<*yc; ++j)
@@ -66,7 +66,7 @@ std::vector<int> get_contingency_matrix(
             stop("x and y must be of equal lengths");
 
         for (Py_ssize_t i=0; i<n; ++i) {
-            if (rx[i] == NA_INTEGER || ry[i] == NA_INTEGER)
+            if (ISNA(rx[i]) || ISNA(ry[i]))
                 stop("missing values not allowed");
         }
 
@@ -78,7 +78,7 @@ std::vector<int> get_contingency_matrix(
         Cminmax(INTEGER(SEXP(ry)), n, &ymin, &ymax);
         *yc = (ymax-ymin+1);
 
-        std::vector<int> C((*xc)*(*yc));
+        std::vector<double> C((*xc)*(*yc));
         Ccontingency_table(C.data(), *xc, *yc,
             xmin, ymin, INTEGER(SEXP(rx)), INTEGER(SEXP(ry)), n);
         return C;
@@ -95,64 +95,63 @@ std::vector<int> get_contingency_matrix(
 //' of a set of \eqn{n} elements into, respectively, \eqn{K} and \eqn{L}
 //' nonempty and pairwise disjoint subsets.
 //'
-//' For instance, \code{x} and \code{y} can be two clusterings
+//' For instance, \code{x} and \code{y} can represent two clusterings
 //' of a dataset with \eqn{n} observations specified by two vectors
-//' of labels. These functions can be used as external cluster
+//' of labels. The functions described here can be used as external cluster
 //' validity measures, where we assume that \code{x} is
-//' the reference (ground-truth) partition (compare Gagolewski, 2022).
+//' a reference (ground-truth) partition whilst \code{y} is the vector
+//' of predicted cluster memberships.
 //'
-//' @details
-//' Each index except \code{adjusted_asymmetric_accuracy()}
-//' can act as a pairwise partition similarity score: it is symmetric,
+//' All indices except \code{normalized_clustering_accuracy()}
+//' can act as a pairwise partition similarity score: they are symmetric,
 //' i.e., \code{index(x, y) == index(y, x)}.
 //'
 //' Each index except \code{mi_score()} (which computes the mutual
 //' information score) outputs 1 given two identical partitions.
-//' Note that partitions are always defined up to a bijection of the set of
-//' possible labels, e.g., (1, 1, 2, 1) and (4, 4, 2, 4)
+//' Note that partitions are always defined up to a permutation (bijection)
+//' of the set of possible labels, e.g., (1, 1, 2, 1) and (4, 4, 2, 4)
 //' represent the same 2-partition.
 //'
-//'
-//' \code{adjusted_asymmetric_accuracy()} (Gagolewski, 2022)
-//' is an external cluster validity measure
+//' @details
+//' \code{normalized_clustering_accuracy()} (Gagolewski, 2023)
+//' is an asymmetric external cluster validity measure
 //' which assumes that the label vector \code{x} (or rows in the confusion
 //' matrix) represents the reference (ground truth) partition.
-//' It is a corrected-for-chance summary of the proportion of correctly
-//' classified points in each cluster (with cluster matching based on the
-//' solution to the maximal linear sum assignment problem;
-//' see \code{\link{normalized_confusion_matrix}}), given by:
-//' \eqn{(\max_\sigma \sum_{i=1}^K (c_{i, \sigma(i)}/(c_{i, 1}+...+c_{i, K})) - 1)/(K - 1)},
-//' where \eqn{C} is the confusion matrix.
+//' It is an average proportion of correctly classified points in each cluster
+//' above the worst case scenario of uniform membership assignment,
+//' with cluster ID matching based on the solution to the maximal linear
+//' sum assignment problem; see \code{\link{normalized_confusion_matrix}}).
+//' It is given by:
+//' \eqn{\max_\sigma \frac{1}{K} \sum_{j=1}^K \frac{c_{\sigma(j), j}-c_{\sigma(j),\cdot}/K}{c_{\sigma(j),\cdot}-c_{\sigma(j),\cdot}/K}},
+//' where \eqn{C} is a confusion matrix with \eqn{K} rows and \eqn{L} columns,
+//' \eqn{\sigma} is a permutation of the set \eqn{\{1,\dots,\max(K,L)\}}, and
+//' \eqn{c_{i, \cdot}=c_{i, 1}+...+c_{i, L}} is the i-th row sum,
+//' under the assumption that \eqn{c_{i,j}=0} for \eqn{i>K} or \eqn{j>L}
+//' and \eqn{0/0=0}.
 //'
-//' \code{normalized_accuracy()} is defined as
-//' \eqn{(Accuracy(C_\sigma)-1/max(K,L))/(1-1/max(K,L))}, where \eqn{C_\sigma} is a version
-//' of the confusion matrix for given \code{x} and \code{y}
-//' with columns permuted based on the solution to the
-//' maximal linear sum assignment problem.
-//' The \eqn{Accuracy(C_\sigma)} part is sometimes referred to as
-//' set-matching classification rate or pivoted accuracy.
+//' \code{normalized_pivoted_accuracy()} is defined as
+//' \eqn{(\max_\sigma \sum_{j=1}^{\max(K,L)} c_{\sigma(j),j}/n-1/\max(K,L))/(1-1/\max(K,L))},
+//' where \eqn{\sigma} is a permutation of the set \eqn{\{1,\dots,\max(K,L)\}},
+//' and \eqn{n} is the sum of all elements in \eqn{C}.
+//' For non-square matrices, missing rows/columns are assumed
+//' to be filled with 0s.
 //'
-//' \code{pair_sets_index()} gives the Pair Sets Index (PSI)
-//' adjusted for chance (Rezaei, Franti, 2016).
-//' Pairing is based on the solution to the linear sum assignment problem
-//' of a transformed version of the confusion matrix.
-//' Its simplified version assumes E=1 in the definition of the index,
-//' i.e., uses Eq. (20) instead of (18).
+//' \code{pair_sets_index()} (PSI) was introduced in (Rezaei, Franti, 2016).
+//' The simplified PSI assumes E=1 in the definition of the index,
+//' i.e., uses Eq. (20) in the said paper instead of Eq. (18).
+//' For non-square matrices, missing rows/columns are assumed
+//' to be filled with 0s.
 //'
 //' \code{rand_score()} gives the Rand score (the "probability" of agreement
 //' between the two partitions) and
 //' \code{adjusted_rand_score()} is its version corrected for chance,
-//' see (Hubert, Arabie, 1985),
-//' its expected value is 0.0 given two independent partitions.
-//' Due to the adjustment, the resulting index might also be negative
+//' see (Hubert, Arabie, 1985): its expected value is 0 given two independent
+//' partitions. Due to the adjustment, the resulting index may be negative
 //' for some inputs.
 //'
 //' Similarly, \code{fm_score()} gives the Fowlkes-Mallows (FM) score
-//' and \code{adjusted_fm_score()} is its adjusted-for-chance version,
+//' and \code{adjusted_fm_score()} is its adjusted-for-chance version;
 //' see (Hubert, Arabie, 1985).
-//'
-//' Note that both the (unadjusted) Rand and FM scores are bounded from below
-//' by \eqn{1/(K+1)} if \eqn{K=L}, hence their adjusted versions are preferred.
 //'
 //' \code{mi_score()}, \code{adjusted_mi_score()} and
 //' \code{normalized_mi_score()} are information-theoretic
@@ -166,7 +165,7 @@ std::vector<int> get_contingency_matrix(
 //' of the main diagonal is the largest possible (by solving
 //' the maximal assignment problem).
 //' The function only accepts \eqn{K \leq L}.
-//' The sole reordering of the columns of a confusion matrix can be determined
+//' The reordering of the columns of a confusion matrix can be determined
 //' by calling \code{normalizing_permutation()}.
 //'
 //' Also note that the built-in
@@ -177,8 +176,8 @@ std::vector<int> get_contingency_matrix(
 //' Gagolewski M., \emph{A Framework for Benchmarking Clustering Algorithms},
 //' 2022, \url{https://clustering-benchmarks.gagolewski.com}.
 //'
-//' Gagolewski M., Adjusted asymmetric accuracy: A well-behaving external
-//' cluster validity measure, 2022, under review (preprint),
+//' Gagolewski M., Normalised clustering accuracy: An asymmetric external
+//' cluster validity measure, 2023, under review (preprint),
 //' \doi{10.48550/arXiv.2209.02935}.
 //'
 //' Hubert L., Arabie P., Comparing partitions,
@@ -214,19 +213,23 @@ std::vector<int> get_contingency_matrix(
 //' or NULL (if x is an K*L confusion matrix)
 //'
 //' @param simplified whether to assume E=1 in the definition of the pair sets index index,
-//'     i.e., use Eq. (20) instead of (18); see (Rezaei, Franti, 2016).
+//'     i.e., use Eq. (20) in (Rezaei, Franti, 2016) instead of Eq. (18)
+//'
+//' @param clipped whether the result should be clipped to the unit interval, i.e., [0, 1]
 //'
 //'
 //' @return Each cluster validity measure is a single numeric value.
 //'
-//' \code{normalized_confusion_matrix()} returns an integer matrix.
+//' \code{normalized_confusion_matrix()} returns a numeric matrix.
+//'
+//' \code{normalizing_permutation()} returns a vector of indexes.
 //'
 //'
 //' @examples
 //' y_true <- iris[[5]]
 //' y_pred <- kmeans(as.matrix(iris[1:4]), 3)$cluster
-//' adjusted_asymmetric_accuracy(y_true, y_pred)
-//' normalized_accuracy(y_true, y_pred)
+//' normalized_clustering_accuracy(y_true, y_pred)
+//' normalized_pivoted_accuracy(y_true, y_pred)
 //' pair_sets_index(y_true, y_pred)
 //' pair_sets_index(y_true, y_pred, simplified=TRUE)
 //' adjusted_rand_score(y_true, y_pred)
@@ -243,59 +246,70 @@ std::vector<int> get_contingency_matrix(
 //' @name compare_partitions
 //' @export
 //[[Rcpp::export]]
-double adjusted_asymmetric_accuracy(RObject x, RObject y=R_NilValue)
+double normalized_clustering_accuracy(RObject x, RObject y=R_NilValue)
 {
     Py_ssize_t xc, yc;
-    std::vector<int> C(
+    std::vector<double> C(
         get_contingency_matrix(x, y, &xc, &yc)
     );
 
-    return Ccompare_partitions_aaa(C.data(), xc, yc);
+    return Ccompare_partitions_nca(C.data(), xc, yc);
 }
 
 
 //' @rdname compare_partitions
 //' @export
 //[[Rcpp::export]]
-double normalized_accuracy(RObject x, RObject y=R_NilValue)
+double normalized_pivoted_accuracy(RObject x, RObject y=R_NilValue)
 {
     Py_ssize_t xc, yc;
-    std::vector<int> C(
+    std::vector<double> C(
         get_contingency_matrix(x, y, &xc, &yc)
     );
 
-    return Ccompare_partitions_nacc(C.data(), xc, yc);
+    return Ccompare_partitions_npa(C.data(), xc, yc);
 }
 
 
 //' @rdname compare_partitions
 //' @export
 //[[Rcpp::export]]
-double pair_sets_index(RObject x, RObject y=R_NilValue, bool simplified=false)
+double pair_sets_index(RObject x, RObject y=R_NilValue, bool simplified=false, bool clipped=true)
 {
     Py_ssize_t xc, yc;
-    std::vector<int> C(
+    std::vector<double> C(
         get_contingency_matrix(x, y, &xc, &yc)
     );
 
+    double res;
     if (simplified)
-        return Ccompare_partitions_psi(C.data(), xc, yc).spsi;
+        res = Ccompare_partitions_psi(C.data(), xc, yc).spsi_unclipped;
     else
-        return Ccompare_partitions_psi(C.data(), xc, yc).psi;
+        res = Ccompare_partitions_psi(C.data(), xc, yc).psi_unclipped;
+
+    // Rezaei&Franti use clipped=true in their paper
+
+    if (clipped) res = std::max(0.0, std::min(1.0, res));
+
+    return res;
 }
 
 
 //' @rdname compare_partitions
 //' @export
 //[[Rcpp::export]]
-double adjusted_rand_score(RObject x, RObject y=R_NilValue)
+double adjusted_rand_score(RObject x, RObject y=R_NilValue, bool clipped=false)
 {
     Py_ssize_t xc, yc;
-    std::vector<int> C(
+    std::vector<double> C(
         get_contingency_matrix(x, y, &xc, &yc)
     );
 
-    return Ccompare_partitions_pairs(C.data(), xc, yc).ar;
+    double res = Ccompare_partitions_pairs(C.data(), xc, yc).ar;
+
+    if (clipped) res = std::max(0.0, std::min(1.0, res));
+
+    return res;
 }
 
 
@@ -305,7 +319,7 @@ double adjusted_rand_score(RObject x, RObject y=R_NilValue)
 double rand_score(RObject x, RObject y=R_NilValue)
 {
     Py_ssize_t xc, yc;
-    std::vector<int> C(
+    std::vector<double> C(
         get_contingency_matrix(x, y, &xc, &yc)
     );
 
@@ -316,14 +330,18 @@ double rand_score(RObject x, RObject y=R_NilValue)
 //' @rdname compare_partitions
 //' @export
 //[[Rcpp::export]]
-double adjusted_fm_score(RObject x, RObject y=R_NilValue)
+double adjusted_fm_score(RObject x, RObject y=R_NilValue, bool clipped=false)
 {
     Py_ssize_t xc, yc;
-    std::vector<int> C(
+    std::vector<double> C(
         get_contingency_matrix(x, y, &xc, &yc)
     );
 
-    return Ccompare_partitions_pairs(C.data(), xc, yc).afm;
+    double res = Ccompare_partitions_pairs(C.data(), xc, yc).afm;
+
+    if (clipped) res = std::max(0.0, std::min(1.0, res));
+
+    return res;
 }
 
 
@@ -333,7 +351,7 @@ double adjusted_fm_score(RObject x, RObject y=R_NilValue)
 double fm_score(RObject x, RObject y=R_NilValue)
 {
     Py_ssize_t xc, yc;
-    std::vector<int> C(
+    std::vector<double> C(
         get_contingency_matrix(x, y, &xc, &yc)
     );
 
@@ -347,7 +365,7 @@ double fm_score(RObject x, RObject y=R_NilValue)
 double mi_score(RObject x, RObject y=R_NilValue)
 {
     Py_ssize_t xc, yc;
-    std::vector<int> C(
+    std::vector<double> C(
         get_contingency_matrix(x, y, &xc, &yc)
     );
 
@@ -362,7 +380,7 @@ double mi_score(RObject x, RObject y=R_NilValue)
 double normalized_mi_score(RObject x, RObject y=R_NilValue)
 {
     Py_ssize_t xc, yc;
-    std::vector<int> C(
+    std::vector<double> C(
         get_contingency_matrix(x, y, &xc, &yc)
     );
 
@@ -374,14 +392,18 @@ double normalized_mi_score(RObject x, RObject y=R_NilValue)
 //' @rdname compare_partitions
 //' @export
 //[[Rcpp::export]]
-double adjusted_mi_score(RObject x, RObject y=R_NilValue)
+double adjusted_mi_score(RObject x, RObject y=R_NilValue, bool clipped=false)
 {
     Py_ssize_t xc, yc;
-    std::vector<int> C(
+    std::vector<double> C(
         get_contingency_matrix(x, y, &xc, &yc)
     );
 
-    return Ccompare_partitions_info(C.data(), xc, yc).ami;
+    double res = Ccompare_partitions_info(C.data(), xc, yc).ami;
+
+    if (clipped) res = std::max(0.0, std::min(1.0, res));
+
+    return res;
 }
 
 
@@ -389,20 +411,21 @@ double adjusted_mi_score(RObject x, RObject y=R_NilValue)
 //' @rdname compare_partitions
 //' @export
 //[[Rcpp::export]]
-IntegerMatrix normalized_confusion_matrix(RObject x, RObject y=R_NilValue)
+NumericMatrix normalized_confusion_matrix(RObject x, RObject y=R_NilValue)
 {
     Py_ssize_t xc, yc;
-    std::vector<int> C(
+    std::vector<double> C(
         get_contingency_matrix(x, y, &xc, &yc)
     );
 
-    std::vector<int> C_out_Corder(xc*yc);
+    std::vector<double> C_out_Corder(xc*yc);
     Capply_pivoting(C.data(), xc, yc, C_out_Corder.data());
 
-    IntegerMatrix Cout(xc, yc);
+    NumericMatrix Cout(xc, yc);
     for (Py_ssize_t i=0; i<xc; ++i)  // make Fortran order
-            for (Py_ssize_t j=0; j<yc; ++j)
-                Cout(i, j) = C_out_Corder[j+i*yc];
+        for (Py_ssize_t j=0; j<yc; ++j)
+            Cout(i, j) = C_out_Corder[j+i*yc];
+
     return Cout;
 }
 
@@ -414,7 +437,7 @@ IntegerMatrix normalized_confusion_matrix(RObject x, RObject y=R_NilValue)
 IntegerVector normalizing_permutation(RObject x, RObject y=R_NilValue)
 {
     Py_ssize_t xc, yc;
-    std::vector<int> C(
+    std::vector<double> C(
         get_contingency_matrix(x, y, &xc, &yc)
     );
 

@@ -23,7 +23,7 @@
  *  doi:10.1109/TKDE.2016.2551240
  *
  *
- *  Copyleft (C) 2018-2022, Marek Gagolewski <https://www.gagolewski.com>
+ *  Copyleft (C) 2018-2023, Marek Gagolewski <https://www.gagolewski.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License
@@ -105,8 +105,8 @@ struct CComparePartitionsInfoResult {
  * Stores normalised set-matching scores
  */
 struct CCompareSetMatchingResult {
-    double psi;
-    double spsi;
+    double psi_unclipped;
+    double spsi_unclipped;
 };
 
 
@@ -239,8 +239,8 @@ void Capply_pivoting(
  *
  * The elements in C are modified in-place.
  */
-template<class T>
-void Ccontingency_table(T* Cout, Py_ssize_t xc, Py_ssize_t yc,
+template<class O, class T>
+void Ccontingency_table(O* Cout, Py_ssize_t xc, Py_ssize_t yc,
         T xmin, T ymin,
         const T* x, const T* y, Py_ssize_t n)
 {
@@ -250,7 +250,7 @@ void Ccontingency_table(T* Cout, Py_ssize_t xc, Py_ssize_t yc,
     for (Py_ssize_t i=0; i<n; ++i) {
         GENIECLUST_ASSERT(   0 <= (x[i]-xmin)*yc +(y[i]-ymin));
         GENIECLUST_ASSERT(xc*yc > (x[i]-xmin)*yc +(y[i]-ymin));
-        Cout[(x[i]-xmin)*yc +(y[i]-ymin)]++;
+        Cout[(x[i]-xmin)*yc +(y[i]-ymin)] += 1;
     }
 }
 
@@ -300,7 +300,7 @@ CComparePartitionsPairsResult Ccompare_partitions_pairs(const T* C,
     double prod_comb = (sum_comb_x*sum_comb_y)/n/(n-1.0)*2.0; // expected sum_comb,
                                         // see Eq.(2) in (Hubert, Arabie, 1985)
     double mean_comb = (sum_comb_x+sum_comb_y)*0.5;
-    double e_fm = prod_comb/sqrt(sum_comb_x*sum_comb_y); // expected FM (variant)
+    double e_fm = prod_comb/sqrt(sum_comb_x*sum_comb_y); // expected FM
 
     CComparePartitionsPairsResult res;
     res.ar  = (sum_comb-prod_comb)/(mean_comb-prod_comb);
@@ -401,12 +401,16 @@ CComparePartitionsInfoResult Ccompare_partitions_info(const T* C,
 
 
 
-/*! Computes the normalised accuracy score between two partitions
+/*! Computes the normalised pivoted accuracy
  *
- *  Normalised accuracy is (Accuracy(C[:,sigma])-1.0/max(xc,yc))/(1.0-1.0/max(xc,yc)),
+ *  Normalised pivoted accuracy is
+ *  (Accuracy(C[:,sigma])-1.0/max(xc,yc))/(1.0-1.0/max(xc,yc)),
  *  where C[:,sigma] is a version of the input confusion matrix
  *  with columns permuted based on the solution to the
  *  maximal linear sum assignment problem.
+ *
+ *  For non-square matrices, missing rows/columns are assumed
+ *  to be filled with 0s.
  *
  *  Accuracy(C[:,sigma]) is sometimes referred to as
  *  set-matching classification rate or pivoted accuracy.
@@ -422,8 +426,8 @@ CComparePartitionsInfoResult Ccompare_partitions_info(const T* C,
  *  Meila M., Heckerman D., An experimental comparison of model-based clustering
  *  methods, Machine Learning 42, 2001, pp. 9--29, doi:10.1023/A:1007648401407.
  *
- *  Gagolewski M., Adjusted asymmetric accuracy: A well-behaving external
- *  cluster validity measure, 2022, submitted for publication.
+ *  Gagolewski M., Normalised clustering accuracy: An asymmetric external
+ *  cluster validity measure, 2023, submitted for publication.
  *  URL: https://arxiv.org/pdf/2209.02935.pdf
  *
  *
@@ -434,26 +438,34 @@ CComparePartitionsInfoResult Ccompare_partitions_info(const T* C,
  *  @return the computed score
  */
 template<class T>
-double Ccompare_partitions_nacc(const T* C, Py_ssize_t xc, Py_ssize_t yc)
+double Ccompare_partitions_npa(const T* C, Py_ssize_t xc, Py_ssize_t yc)
 {
     double n = 0.0; // total sum (length of the underlying x and y = number of points)
-    for (Py_ssize_t ij=0; ij<xc*yc; ++ij)
-        n += C[ij];
+    for (Py_ssize_t ij=0; ij<xc*yc; ++ij) {
+        if (C[ij] > 0) {
+            n += C[ij];
+        }
+    }
 
-    // if C is not a square matrix, treat the missing columns as if they were filled with 0s
+    // if C is not a square matrix, treat the missing columns
+    // as if they were filled with 0s
     Py_ssize_t xyc = std::max(xc, yc);
-    std::vector<double> S(xyc*xyc, 0);
+    std::vector<double> S(xyc*xyc, 0.0);
     for (Py_ssize_t i=0; i<xc; ++i) {
         for (Py_ssize_t j=0; j<yc; ++j) {
-            S[i*xyc+j] = (double)C[i*yc+j];
+            if (C[i*yc+j] > 0) {
+                S[i*xyc+j] = (double)C[i*yc+j];
+            }
         }
     }
 
     std::vector<Py_ssize_t> output_col4row(xyc);
 
-    Py_ssize_t retval = linear_sum_assignment(S.data(), xyc, xyc, output_col4row.data(), false); // minimise=false
+    Py_ssize_t retval = linear_sum_assignment(S.data(), xyc, xyc,
+        output_col4row.data(), false); // minimise=false
     GENIECLUST_ASSERT(retval == 0);
 
+    // sum of pivots:
     double t = 0.0;
     for (Py_ssize_t i=0; i<xyc; ++i)
         t += S[xyc*i+output_col4row[i]];
@@ -465,16 +477,20 @@ double Ccompare_partitions_nacc(const T* C, Py_ssize_t xc, Py_ssize_t yc)
 
 
 
-/*! Computes the adjusted asymmetric accuracy (AAA) score
+/*! Computes the normalised clustering accuracy (NCA) score
  *
- *  AAA is asymmetric - we assume that rows in C determine the true (reference)
- *  partition.
+ *  NCA is not symmetric - we assume that rows in C determine the true
+ *  (reference) partition.
+ *
+ *  For non-square confusion matrices, missing rows/columns
+ *  are assumed to be filled with 0s and that 0/0 is 0,
+ *  but the original row count is used for normalisation.
  *
  *  References
  *  ==========
  *
- *  Gagolewski M., Adjusted asymmetric accuracy: A well-behaving external
- *  cluster validity measure, 2022, submitted for publication.
+ *  Gagolewski M., Normalised clustering accuracy: An asymmetric external
+ *  cluster validity measure, 2023, submitted for publication.
  *  URL: https://arxiv.org/pdf/2209.02935.pdf
  *
  *
@@ -485,29 +501,39 @@ double Ccompare_partitions_nacc(const T* C, Py_ssize_t xc, Py_ssize_t yc)
  *  @return the computed score
  */
 template<class T>
-double Ccompare_partitions_aaa(const T* C, Py_ssize_t xc, Py_ssize_t yc)
+double Ccompare_partitions_nca(const T* C, Py_ssize_t xc, Py_ssize_t yc)
 {
-    std::vector<double> sum_x(xc, 0);
+    std::vector<double> sum_x(xc, 0.0);
     for (Py_ssize_t i=0; i<xc; ++i) {
         for (Py_ssize_t j=0; j<yc; ++j) {
-            sum_x[i] += C[i*yc+j];
+            if (C[i*yc+j] > 0) {
+                sum_x[i] += C[i*yc+j];
+            }
         }
     }
 
     // if xc>yc, treat C as if its missing columns were filled with 0s
     Py_ssize_t yc2 = std::max(xc, yc);
 
-    std::vector<double> S(xc*yc2, 0);
+    // if xc<yc, only xc items are matched;
+    // thus, overall, the behaviour is like filling missed rows/columns with 0s
+    // and assuming 0/0 == 0, while still using k=nrow(C)
+
+    std::vector<double> S(xc*yc2, 0.0);
     for (Py_ssize_t i=0; i<xc; ++i) {
         for (Py_ssize_t j=0; j<yc; ++j) {
-            S[i*yc2+j] = (double)C[i*yc+j]/(double)sum_x[i];
+            if (C[i*yc+j] > 0) {
+                S[i*yc2+j] = (double)C[i*yc+j]/(double)sum_x[i];
+            }
         }
     }
 
     std::vector<Py_ssize_t> output_col4row2(xc);
-    Py_ssize_t retval = linear_sum_assignment(S.data(), xc, yc2, output_col4row2.data(), false); // minimise=false
+    Py_ssize_t retval = linear_sum_assignment(S.data(), xc, yc2,
+        output_col4row2.data(), false); // minimise=false
     GENIECLUST_ASSERT(retval == 0);
 
+    // sum of pivots
     double t = 0.0;
     for (Py_ssize_t i=0; i<xc; ++i)
         t += S[yc2*i+output_col4row2[i]];
@@ -516,11 +542,16 @@ double Ccompare_partitions_aaa(const T* C, Py_ssize_t xc, Py_ssize_t yc)
 }
 
 
-/*! Computes the pair sets index (PSI) and its simplified version
+/*! Computes the pair sets index (PSI) and its simplified version,
+ *  but without clipping negative values to 0.
  *
  *
  *  SPSI (simplified PSI) assumes E=1 in the definition of the index
- *  in (Rezaei, Franti 2016), i.e., uses Eq. (20) instead of (18) therein.
+ *  in (Rezaei, Franti 2016), i.e., uses Eq. (20) instead of Eq. (18) therein.
+ *
+ *  For non-square confusion matrices, missing rows/columns
+ *  are assumed to be filled with 0s.
+ *
  *
  *  References
  *  ==========
@@ -542,51 +573,72 @@ CCompareSetMatchingResult Ccompare_partitions_psi(
 ) {
 
     double n = 0.0; // total sum (length of the underlying x and y = number of points)
-    for (Py_ssize_t ij=0; ij<xc*yc; ++ij)
-        n += C[ij];
-
-    // if C is not a square matrix, treat the missing columns as if they were filled with 0s
-    Py_ssize_t xyc = std::max(xc, yc);
-
-    std::vector<double> sum_x(xyc, 0);
-    std::vector<double> sum_y(xyc, 0);
-    for (Py_ssize_t i=0; i<xc; ++i) {
-        for (Py_ssize_t j=0; j<yc; ++j) {
-            sum_x[i] += C[i*yc+j];
-            sum_y[j] += C[i*yc+j];
+    for (Py_ssize_t ij=0; ij<xc*yc; ++ij) {
+        if (C[ij] > 0) {
+            n += C[ij];
         }
     }
 
-    std::vector<double> S(xyc*xyc, 0);
+    // If C is not a square matrix, treat the missing columns or rows
+    // as if they were filled with 0s.
+    Py_ssize_t xyc = std::max(xc, yc);
+
+    std::vector<double> sum_x(xyc, 0.0);
+    std::vector<double> sum_y(xyc, 0.0);
     for (Py_ssize_t i=0; i<xc; ++i) {
         for (Py_ssize_t j=0; j<yc; ++j) {
-            S[i*xyc+j] = (double)C[i*yc+j]/(double)std::max(sum_x[i], sum_y[j]);
+            if (C[i*yc+j] > 0) {
+                sum_x[i] += C[i*yc+j];
+                sum_y[j] += C[i*yc+j];
+            }
+        }
+    }
+
+    std::vector<double> S(xyc*xyc, 0.0);
+    for (Py_ssize_t i=0; i<xc; ++i) {
+        for (Py_ssize_t j=0; j<yc; ++j) {
+            if (C[i*yc+j] > 0) {
+                S[i*xyc+j] = (double)C[i*yc+j]/(double)std::max(sum_x[i], sum_y[j]);
+            }
         }
     }
 
     std::vector<Py_ssize_t> output_col4row2(xyc);
-    Py_ssize_t retval = linear_sum_assignment(S.data(), xyc, xyc, output_col4row2.data(), false); // minimise=false
+    Py_ssize_t retval = linear_sum_assignment(S.data(), xyc, xyc,
+        output_col4row2.data(), false); // minimise=false
     GENIECLUST_ASSERT(retval == 0);
 
+    // // sum of pivots:
+    //     double s = 0.0;
+    //     for (Py_ssize_t i=0; i<xyc; ++i)
+    //         s += S[xyc*i+output_col4row2[i]];
+    // from the smallest to the greatest is more numerically well-behaving:
+    std::vector<double> pivots(xyc, 0.0);
+    for (Py_ssize_t i=0; i<xyc; ++i)
+        pivots[i] = S[xyc*i+output_col4row2[i]];
+    std::sort(pivots.begin(), pivots.end());
     double s = 0.0;
     for (Py_ssize_t i=0; i<xyc; ++i)
-        s += S[xyc*i+output_col4row2[i]];
+        s += pivots[i];
 
     double es;
     std::sort(sum_x.begin(), sum_x.end());
     std::sort(sum_y.begin(), sum_y.end());
     es = 0.0;
-    for (Py_ssize_t i=0; i<xyc; ++i)
-        es += sum_y[xyc-i-1]*sum_x[xyc-i-1]/(double)std::max(sum_x[xyc-i-1], sum_y[xyc-i-1]);
+    for (Py_ssize_t i=0; i<xyc; ++i) {
+        //es += sum_y[xyc-i-1]*sum_x[xyc-i-1]/(double)std::max(sum_x[xyc-i-1], sum_y[xyc-i-1]);
+        if (sum_y[i] > sum_x[i])
+            es += sum_x[i];
+        else
+            es += sum_y[i];
+    }
     es /= (double)n;
 
     CCompareSetMatchingResult res;
 
-    res.psi  = (s-es)/(xyc-es);
-    if (res.psi<0.0) res.psi = 0.0;
-
-    res.spsi  = (s-1.0)/(xyc-1.0);
-    if (res.spsi<0.0) res.spsi = 0.0;
+    // PSI uses max(0, PSI_unclipped)
+    res.psi_unclipped = (s-es)/(xyc-es);
+    res.spsi_unclipped = (s-1.0)/(xyc-1.0);
 
     return res;
 }

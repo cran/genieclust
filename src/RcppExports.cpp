@@ -10,52 +10,54 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// adjusted_asymmetric_accuracy
-double adjusted_asymmetric_accuracy(RObject x, RObject y);
-RcppExport SEXP _genieclust_adjusted_asymmetric_accuracy(SEXP xSEXP, SEXP ySEXP) {
+// normalized_clustering_accuracy
+double normalized_clustering_accuracy(RObject x, RObject y);
+RcppExport SEXP _genieclust_normalized_clustering_accuracy(SEXP xSEXP, SEXP ySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< RObject >::type x(xSEXP);
     Rcpp::traits::input_parameter< RObject >::type y(ySEXP);
-    rcpp_result_gen = Rcpp::wrap(adjusted_asymmetric_accuracy(x, y));
+    rcpp_result_gen = Rcpp::wrap(normalized_clustering_accuracy(x, y));
     return rcpp_result_gen;
 END_RCPP
 }
-// normalized_accuracy
-double normalized_accuracy(RObject x, RObject y);
-RcppExport SEXP _genieclust_normalized_accuracy(SEXP xSEXP, SEXP ySEXP) {
+// normalized_pivoted_accuracy
+double normalized_pivoted_accuracy(RObject x, RObject y);
+RcppExport SEXP _genieclust_normalized_pivoted_accuracy(SEXP xSEXP, SEXP ySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< RObject >::type x(xSEXP);
     Rcpp::traits::input_parameter< RObject >::type y(ySEXP);
-    rcpp_result_gen = Rcpp::wrap(normalized_accuracy(x, y));
+    rcpp_result_gen = Rcpp::wrap(normalized_pivoted_accuracy(x, y));
     return rcpp_result_gen;
 END_RCPP
 }
 // pair_sets_index
-double pair_sets_index(RObject x, RObject y, bool simplified);
-RcppExport SEXP _genieclust_pair_sets_index(SEXP xSEXP, SEXP ySEXP, SEXP simplifiedSEXP) {
+double pair_sets_index(RObject x, RObject y, bool simplified, bool clipped);
+RcppExport SEXP _genieclust_pair_sets_index(SEXP xSEXP, SEXP ySEXP, SEXP simplifiedSEXP, SEXP clippedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< RObject >::type x(xSEXP);
     Rcpp::traits::input_parameter< RObject >::type y(ySEXP);
     Rcpp::traits::input_parameter< bool >::type simplified(simplifiedSEXP);
-    rcpp_result_gen = Rcpp::wrap(pair_sets_index(x, y, simplified));
+    Rcpp::traits::input_parameter< bool >::type clipped(clippedSEXP);
+    rcpp_result_gen = Rcpp::wrap(pair_sets_index(x, y, simplified, clipped));
     return rcpp_result_gen;
 END_RCPP
 }
 // adjusted_rand_score
-double adjusted_rand_score(RObject x, RObject y);
-RcppExport SEXP _genieclust_adjusted_rand_score(SEXP xSEXP, SEXP ySEXP) {
+double adjusted_rand_score(RObject x, RObject y, bool clipped);
+RcppExport SEXP _genieclust_adjusted_rand_score(SEXP xSEXP, SEXP ySEXP, SEXP clippedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< RObject >::type x(xSEXP);
     Rcpp::traits::input_parameter< RObject >::type y(ySEXP);
-    rcpp_result_gen = Rcpp::wrap(adjusted_rand_score(x, y));
+    Rcpp::traits::input_parameter< bool >::type clipped(clippedSEXP);
+    rcpp_result_gen = Rcpp::wrap(adjusted_rand_score(x, y, clipped));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -72,14 +74,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // adjusted_fm_score
-double adjusted_fm_score(RObject x, RObject y);
-RcppExport SEXP _genieclust_adjusted_fm_score(SEXP xSEXP, SEXP ySEXP) {
+double adjusted_fm_score(RObject x, RObject y, bool clipped);
+RcppExport SEXP _genieclust_adjusted_fm_score(SEXP xSEXP, SEXP ySEXP, SEXP clippedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< RObject >::type x(xSEXP);
     Rcpp::traits::input_parameter< RObject >::type y(ySEXP);
-    rcpp_result_gen = Rcpp::wrap(adjusted_fm_score(x, y));
+    Rcpp::traits::input_parameter< bool >::type clipped(clippedSEXP);
+    rcpp_result_gen = Rcpp::wrap(adjusted_fm_score(x, y, clipped));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -120,19 +123,20 @@ BEGIN_RCPP
 END_RCPP
 }
 // adjusted_mi_score
-double adjusted_mi_score(RObject x, RObject y);
-RcppExport SEXP _genieclust_adjusted_mi_score(SEXP xSEXP, SEXP ySEXP) {
+double adjusted_mi_score(RObject x, RObject y, bool clipped);
+RcppExport SEXP _genieclust_adjusted_mi_score(SEXP xSEXP, SEXP ySEXP, SEXP clippedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< RObject >::type x(xSEXP);
     Rcpp::traits::input_parameter< RObject >::type y(ySEXP);
-    rcpp_result_gen = Rcpp::wrap(adjusted_mi_score(x, y));
+    Rcpp::traits::input_parameter< bool >::type clipped(clippedSEXP);
+    rcpp_result_gen = Rcpp::wrap(adjusted_mi_score(x, y, clipped));
     return rcpp_result_gen;
 END_RCPP
 }
 // normalized_confusion_matrix
-IntegerMatrix normalized_confusion_matrix(RObject x, RObject y);
+NumericMatrix normalized_confusion_matrix(RObject x, RObject y);
 RcppExport SEXP _genieclust_normalized_confusion_matrix(SEXP xSEXP, SEXP ySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -361,16 +365,16 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_genieclust_adjusted_asymmetric_accuracy", (DL_FUNC) &_genieclust_adjusted_asymmetric_accuracy, 2},
-    {"_genieclust_normalized_accuracy", (DL_FUNC) &_genieclust_normalized_accuracy, 2},
-    {"_genieclust_pair_sets_index", (DL_FUNC) &_genieclust_pair_sets_index, 3},
-    {"_genieclust_adjusted_rand_score", (DL_FUNC) &_genieclust_adjusted_rand_score, 2},
+    {"_genieclust_normalized_clustering_accuracy", (DL_FUNC) &_genieclust_normalized_clustering_accuracy, 2},
+    {"_genieclust_normalized_pivoted_accuracy", (DL_FUNC) &_genieclust_normalized_pivoted_accuracy, 2},
+    {"_genieclust_pair_sets_index", (DL_FUNC) &_genieclust_pair_sets_index, 4},
+    {"_genieclust_adjusted_rand_score", (DL_FUNC) &_genieclust_adjusted_rand_score, 3},
     {"_genieclust_rand_score", (DL_FUNC) &_genieclust_rand_score, 2},
-    {"_genieclust_adjusted_fm_score", (DL_FUNC) &_genieclust_adjusted_fm_score, 2},
+    {"_genieclust_adjusted_fm_score", (DL_FUNC) &_genieclust_adjusted_fm_score, 3},
     {"_genieclust_fm_score", (DL_FUNC) &_genieclust_fm_score, 2},
     {"_genieclust_mi_score", (DL_FUNC) &_genieclust_mi_score, 2},
     {"_genieclust_normalized_mi_score", (DL_FUNC) &_genieclust_normalized_mi_score, 2},
-    {"_genieclust_adjusted_mi_score", (DL_FUNC) &_genieclust_adjusted_mi_score, 2},
+    {"_genieclust_adjusted_mi_score", (DL_FUNC) &_genieclust_adjusted_mi_score, 3},
     {"_genieclust_normalized_confusion_matrix", (DL_FUNC) &_genieclust_normalized_confusion_matrix, 2},
     {"_genieclust_normalizing_permutation", (DL_FUNC) &_genieclust_normalizing_permutation, 2},
     {"_genieclust_calinski_harabasz_index", (DL_FUNC) &_genieclust_calinski_harabasz_index, 2},

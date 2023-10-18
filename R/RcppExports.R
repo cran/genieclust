@@ -9,64 +9,63 @@
 #' of a set of \eqn{n} elements into, respectively, \eqn{K} and \eqn{L}
 #' nonempty and pairwise disjoint subsets.
 #'
-#' For instance, \code{x} and \code{y} can be two clusterings
+#' For instance, \code{x} and \code{y} can represent two clusterings
 #' of a dataset with \eqn{n} observations specified by two vectors
-#' of labels. These functions can be used as external cluster
+#' of labels. The functions described here can be used as external cluster
 #' validity measures, where we assume that \code{x} is
-#' the reference (ground-truth) partition (compare Gagolewski, 2022).
+#' a reference (ground-truth) partition whilst \code{y} is the vector
+#' of predicted cluster memberships.
 #'
-#' @details
-#' Each index except \code{adjusted_asymmetric_accuracy()}
-#' can act as a pairwise partition similarity score: it is symmetric,
+#' All indices except \code{normalized_clustering_accuracy()}
+#' can act as a pairwise partition similarity score: they are symmetric,
 #' i.e., \code{index(x, y) == index(y, x)}.
 #'
 #' Each index except \code{mi_score()} (which computes the mutual
 #' information score) outputs 1 given two identical partitions.
-#' Note that partitions are always defined up to a bijection of the set of
-#' possible labels, e.g., (1, 1, 2, 1) and (4, 4, 2, 4)
+#' Note that partitions are always defined up to a permutation (bijection)
+#' of the set of possible labels, e.g., (1, 1, 2, 1) and (4, 4, 2, 4)
 #' represent the same 2-partition.
 #'
-#'
-#' \code{adjusted_asymmetric_accuracy()} (Gagolewski, 2022)
-#' is an external cluster validity measure
+#' @details
+#' \code{normalized_clustering_accuracy()} (Gagolewski, 2023)
+#' is an asymmetric external cluster validity measure
 #' which assumes that the label vector \code{x} (or rows in the confusion
 #' matrix) represents the reference (ground truth) partition.
-#' It is a corrected-for-chance summary of the proportion of correctly
-#' classified points in each cluster (with cluster matching based on the
-#' solution to the maximal linear sum assignment problem;
-#' see \code{\link{normalized_confusion_matrix}}), given by:
-#' \eqn{(\max_\sigma \sum_{i=1}^K (c_{i, \sigma(i)}/(c_{i, 1}+...+c_{i, K})) - 1)/(K - 1)},
-#' where \eqn{C} is the confusion matrix.
+#' It is an average proportion of correctly classified points in each cluster
+#' above the worst case scenario of uniform membership assignment,
+#' with cluster ID matching based on the solution to the maximal linear
+#' sum assignment problem; see \code{\link{normalized_confusion_matrix}}).
+#' It is given by:
+#' \eqn{\max_\sigma \frac{1}{K} \sum_{j=1}^K \frac{c_{\sigma(j), j}-c_{\sigma(j),\cdot}/K}{c_{\sigma(j),\cdot}-c_{\sigma(j),\cdot}/K}},
+#' where \eqn{C} is a confusion matrix with \eqn{K} rows and \eqn{L} columns,
+#' \eqn{\sigma} is a permutation of the set \eqn{\{1,\dots,\max(K,L)\}}, and
+#' \eqn{c_{i, \cdot}=c_{i, 1}+...+c_{i, L}} is the i-th row sum,
+#' under the assumption that \eqn{c_{i,j}=0} for \eqn{i>K} or \eqn{j>L}
+#' and \eqn{0/0=0}.
 #'
-#' \code{normalized_accuracy()} is defined as
-#' \eqn{(Accuracy(C_\sigma)-1/max(K,L))/(1-1/max(K,L))}, where \eqn{C_\sigma} is a version
-#' of the confusion matrix for given \code{x} and \code{y}
-#' with columns permuted based on the solution to the
-#' maximal linear sum assignment problem.
-#' The \eqn{Accuracy(C_\sigma)} part is sometimes referred to as
-#' set-matching classification rate or pivoted accuracy.
+#' \code{normalized_pivoted_accuracy()} is defined as
+#' \eqn{(\max_\sigma \sum_{j=1}^{\max(K,L)} c_{\sigma(j),j}/n-1/\max(K,L))/(1-1/\max(K,L))},
+#' where \eqn{\sigma} is a permutation of the set \eqn{\{1,\dots,\max(K,L)\}},
+#' and \eqn{n} is the sum of all elements in \eqn{C}.
+#' For non-square matrices, missing rows/columns are assumed
+#' to be filled with 0s.
 #'
-#' \code{pair_sets_index()} gives the Pair Sets Index (PSI)
-#' adjusted for chance (Rezaei, Franti, 2016).
-#' Pairing is based on the solution to the linear sum assignment problem
-#' of a transformed version of the confusion matrix.
-#' Its simplified version assumes E=1 in the definition of the index,
-#' i.e., uses Eq. (20) instead of (18).
+#' \code{pair_sets_index()} (PSI) was introduced in (Rezaei, Franti, 2016).
+#' The simplified PSI assumes E=1 in the definition of the index,
+#' i.e., uses Eq. (20) in the said paper instead of Eq. (18).
+#' For non-square matrices, missing rows/columns are assumed
+#' to be filled with 0s.
 #'
 #' \code{rand_score()} gives the Rand score (the "probability" of agreement
 #' between the two partitions) and
 #' \code{adjusted_rand_score()} is its version corrected for chance,
-#' see (Hubert, Arabie, 1985),
-#' its expected value is 0.0 given two independent partitions.
-#' Due to the adjustment, the resulting index might also be negative
+#' see (Hubert, Arabie, 1985): its expected value is 0 given two independent
+#' partitions. Due to the adjustment, the resulting index may be negative
 #' for some inputs.
 #'
 #' Similarly, \code{fm_score()} gives the Fowlkes-Mallows (FM) score
-#' and \code{adjusted_fm_score()} is its adjusted-for-chance version,
+#' and \code{adjusted_fm_score()} is its adjusted-for-chance version;
 #' see (Hubert, Arabie, 1985).
-#'
-#' Note that both the (unadjusted) Rand and FM scores are bounded from below
-#' by \eqn{1/(K+1)} if \eqn{K=L}, hence their adjusted versions are preferred.
 #'
 #' \code{mi_score()}, \code{adjusted_mi_score()} and
 #' \code{normalized_mi_score()} are information-theoretic
@@ -80,7 +79,7 @@
 #' of the main diagonal is the largest possible (by solving
 #' the maximal assignment problem).
 #' The function only accepts \eqn{K \leq L}.
-#' The sole reordering of the columns of a confusion matrix can be determined
+#' The reordering of the columns of a confusion matrix can be determined
 #' by calling \code{normalizing_permutation()}.
 #'
 #' Also note that the built-in
@@ -91,8 +90,8 @@
 #' Gagolewski M., \emph{A Framework for Benchmarking Clustering Algorithms},
 #' 2022, \url{https://clustering-benchmarks.gagolewski.com}.
 #'
-#' Gagolewski M., Adjusted asymmetric accuracy: A well-behaving external
-#' cluster validity measure, 2022, under review (preprint),
+#' Gagolewski M., Normalised clustering accuracy: An asymmetric external
+#' cluster validity measure, 2023, under review (preprint),
 #' \doi{10.48550/arXiv.2209.02935}.
 #'
 #' Hubert L., Arabie P., Comparing partitions,
@@ -128,19 +127,23 @@
 #' or NULL (if x is an K*L confusion matrix)
 #'
 #' @param simplified whether to assume E=1 in the definition of the pair sets index index,
-#'     i.e., use Eq. (20) instead of (18); see (Rezaei, Franti, 2016).
+#'     i.e., use Eq. (20) in (Rezaei, Franti, 2016) instead of Eq. (18)
+#'
+#' @param clipped whether the result should be clipped to the unit interval, i.e., [0, 1]
 #'
 #'
 #' @return Each cluster validity measure is a single numeric value.
 #'
-#' \code{normalized_confusion_matrix()} returns an integer matrix.
+#' \code{normalized_confusion_matrix()} returns a numeric matrix.
+#'
+#' \code{normalizing_permutation()} returns a vector of indexes.
 #'
 #'
 #' @examples
 #' y_true <- iris[[5]]
 #' y_pred <- kmeans(as.matrix(iris[1:4]), 3)$cluster
-#' adjusted_asymmetric_accuracy(y_true, y_pred)
-#' normalized_accuracy(y_true, y_pred)
+#' normalized_clustering_accuracy(y_true, y_pred)
+#' normalized_pivoted_accuracy(y_true, y_pred)
 #' pair_sets_index(y_true, y_pred)
 #' pair_sets_index(y_true, y_pred, simplified=TRUE)
 #' adjusted_rand_score(y_true, y_pred)
@@ -156,26 +159,26 @@
 #' @rdname compare_partitions
 #' @name compare_partitions
 #' @export
-adjusted_asymmetric_accuracy <- function(x, y = NULL) {
-    .Call(`_genieclust_adjusted_asymmetric_accuracy`, x, y)
+normalized_clustering_accuracy <- function(x, y = NULL) {
+    .Call(`_genieclust_normalized_clustering_accuracy`, x, y)
 }
 
 #' @rdname compare_partitions
 #' @export
-normalized_accuracy <- function(x, y = NULL) {
-    .Call(`_genieclust_normalized_accuracy`, x, y)
+normalized_pivoted_accuracy <- function(x, y = NULL) {
+    .Call(`_genieclust_normalized_pivoted_accuracy`, x, y)
 }
 
 #' @rdname compare_partitions
 #' @export
-pair_sets_index <- function(x, y = NULL, simplified = FALSE) {
-    .Call(`_genieclust_pair_sets_index`, x, y, simplified)
+pair_sets_index <- function(x, y = NULL, simplified = FALSE, clipped = TRUE) {
+    .Call(`_genieclust_pair_sets_index`, x, y, simplified, clipped)
 }
 
 #' @rdname compare_partitions
 #' @export
-adjusted_rand_score <- function(x, y = NULL) {
-    .Call(`_genieclust_adjusted_rand_score`, x, y)
+adjusted_rand_score <- function(x, y = NULL, clipped = FALSE) {
+    .Call(`_genieclust_adjusted_rand_score`, x, y, clipped)
 }
 
 #' @rdname compare_partitions
@@ -186,8 +189,8 @@ rand_score <- function(x, y = NULL) {
 
 #' @rdname compare_partitions
 #' @export
-adjusted_fm_score <- function(x, y = NULL) {
-    .Call(`_genieclust_adjusted_fm_score`, x, y)
+adjusted_fm_score <- function(x, y = NULL, clipped = FALSE) {
+    .Call(`_genieclust_adjusted_fm_score`, x, y, clipped)
 }
 
 #' @rdname compare_partitions
@@ -210,8 +213,8 @@ normalized_mi_score <- function(x, y = NULL) {
 
 #' @rdname compare_partitions
 #' @export
-adjusted_mi_score <- function(x, y = NULL) {
-    .Call(`_genieclust_adjusted_mi_score`, x, y)
+adjusted_mi_score <- function(x, y = NULL, clipped = FALSE) {
+    .Call(`_genieclust_adjusted_mi_score`, x, y, clipped)
 }
 
 #' @rdname compare_partitions
@@ -387,7 +390,7 @@ wcnn_index <- function(X, y, M = 25L) {
     .Call(`_genieclust_dot_gclust`, mst, gini_threshold, verbose)
 }
 
-#' @title Inequity (Inequality) Measures
+#' @title Inequality Measures
 #'
 #' @description
 #' \code{gini_index()} gives the normalised Gini index,
@@ -395,15 +398,15 @@ wcnn_index <- function(X, y, M = 25L) {
 #' \code{devergottini_index()} implements the De Vergottini index.
 #'
 #' @details
-#' These indices can be used to quantify the "inequity" of a numeric sample.
-#' They can be perceived as measures of data dispersion.
+#' These indices can be used to quantify the "inequality" of a numeric sample.
+#' They can be conceived as normalised measures of data dispersion.
 #' For constant vectors (perfect equity), the indices yield values of 0.
-#' Vectors with all elements but one equal to 0 (perfect inequity),
+#' Vectors with all elements but one equal to 0 (perfect inequality),
 #' are assigned scores of 1.
 #' They follow the Pigou-Dalton principle (are Schur-convex):
 #' setting \eqn{x_i = x_i - h} and \eqn{x_j = x_j + h} with \eqn{h > 0}
 #' and \eqn{x_i - h \geq  x_j + h} (taking from the "rich" and
-#' giving to the "poor") decreases the inequity.
+#' giving to the "poor") decreases the inequality
 #'
 #' These indices have applications in economics, amongst others.
 #' The Genie clustering algorithm uses the Gini index as a measure
@@ -459,7 +462,7 @@ wcnn_index <- function(X, y, M = 25L) {
 #'
 #' @param x numeric vector of non-negative values
 #'
-#' @return The value of the inequity index, a number in \eqn{[0, 1]}.
+#' @return The value of the inequality index, a number in \eqn{[0, 1]}.
 #'
 #' @examples
 #' gini_index(c(2, 2, 2, 2, 2))   # no inequality
@@ -475,20 +478,20 @@ wcnn_index <- function(X, y, M = 25L) {
 #' devergottini_index(c(7, 0, 3, 0, 0))
 #' devergottini_index(c(6, 0, 3, 1, 0))
 #'
-#' @name inequity
-#' @rdname inequity
+#' @name inequality
+#' @rdname inequality
 #' @export
 gini_index <- function(x) {
     .Call(`_genieclust_gini_index`, x)
 }
 
-#' @rdname inequity
+#' @rdname inequality
 #' @export
 bonferroni_index <- function(x) {
     .Call(`_genieclust_bonferroni_index`, x)
 }
 
-#' @rdname inequity
+#' @rdname inequality
 #' @export
 devergottini_index <- function(x) {
     .Call(`_genieclust_devergottini_index`, x)

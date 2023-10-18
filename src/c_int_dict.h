@@ -1,6 +1,6 @@
 /*  class CIntDict
  *
- *  Copyleft (C) 2018-2022, Marek Gagolewski <https://www.gagolewski.com>
+ *  Copyleft (C) 2018-2023, Marek Gagolewski <https://www.gagolewski.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License
@@ -291,7 +291,14 @@ public:
     /*! If you want more than merely an input_iterator,
      * go ahead, implement it and make a pull request :)
      */
-    class iterator : public std::iterator<std::input_iterator_tag, Py_ssize_t> {
+    class iterator //: public std::iterator<std::input_iterator_tag, Py_ssize_t>
+    {
+        public:
+            using iterator_category = std::input_iterator_tag;
+            using value_type = Py_ssize_t; // crap
+            using difference_type = void;
+            using pointer = void;
+            using reference = void;
         private:
             const Py_ssize_t* tab_next;
             Py_ssize_t cur;

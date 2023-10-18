@@ -182,7 +182,7 @@ adjusted_rand_score(y_test, y_pred)
 pair_sets_index(y_test, y_pred)
 
 # Fast for low-dimensional Euclidean spaces:
-h <- gclust(emst_mlpack(X))
+# h <- gclust(emst_mlpack(X))
 
 }
 \references{
@@ -195,6 +195,10 @@ Campello R.J.G.B., Moulavi D., Sander J.,
 Density-based clustering based on hierarchical density estimates,
 \emph{Lecture Notes in Computer Science} 7819, 2013, 160-172,
 \doi{10.1007/978-3-642-37456-2_14}.
+
+Gagolewski M., Cena A., Bartoszuk M., Brzozowski L.,
+\emph{Clustering with minimum spanning trees: How good can it be?},
+2023, under review (preprint), \doi{10.48550/arXiv.2303.05679}.
 }
 \seealso{
 The official online manual of \pkg{genieclust} at \url{https://genieclust.gagolewski.com/}

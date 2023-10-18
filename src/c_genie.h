@@ -1,6 +1,6 @@
 /*  The Genie++ Clustering Algorithm
  *
- *  Copyleft (C) 2018-2022, Marek Gagolewski <https://www.gagolewski.com>
+ *  Copyleft (C) 2018-2023, Marek Gagolewski <https://www.gagolewski.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License
@@ -330,7 +330,7 @@ public:
 /*!  The Genie++ Hierarchical Clustering Algorithm
  *
  *   The Genie algorithm (Gagolewski et al., 2016) links two clusters
- *   in such a way that a chosen economic inequity measure
+ *   in such a way that a chosen economic inequality measure
  *   (here, the Gini index) of the cluster sizes does not increase drastically
  *   above a given threshold. The method most often outperforms
  *   the Ward or average linkage, k-means, spectral clustering,
@@ -346,10 +346,10 @@ public:
  *   marked as noise points (if `noise_leaves==True`). This is useful,
  *   if the Genie algorithm is applied on the MST with respect to
  *   the HDBSCAN-like mutual reachability distance.
- *   3. (option) During merge, first pair of clusters that would
+ *   3. (option-experimental) During merge, first pair of clusters that would
  *   give a decrease of the Gini index below the threshold is chosen
  *   (or the one that gives the smallest Gini index if that's not possible)
- *       -- turns out to be slower and (TODO: testing required).
+ *       -- turns out to be slower and worse on benchmark data.
  *   4. The MST need not be connected (is a spanning forest) (e.g., if it
  *   computed based on a disconnected k-NN graph) - each component
  *   will never be merged with any other one.
@@ -367,7 +367,7 @@ template <class T>
 class CGenie : public CGenieBase<T> {
 protected:
 
-    bool new_merge; //<! if there are two clusters, both of the smallest sizes, try merging them first
+    bool experimental_forced_merge; //<! EXPERIMENTAL (worse) if there are two clusters, both of the smallest sizes, try merging them first
 
     /*! Run the Genie++ partitioning.
      *
@@ -410,7 +410,7 @@ protected:
 
 
             if (ds->get_gini() > gini_threshold) {
-                // the Genie correction for inequity of cluster sizes
+                // the Genie correction for inequality of cluster sizes
                 Py_ssize_t m = ds->get_smallest_count();
                 if (m != lastm || lastidx < mst_skiplist->get_key_min()) {
                     // need to start from the beginning of the MST skiplist
@@ -474,11 +474,10 @@ protected:
 
 
 
-    /*! Run the Genie+++ partitioning -- merge a pair of sets
-     *  that reduces the Gini index below the threshold (provided that is possible)
+    /*! Merge a pair of sets that reduces the Gini index below the threshold
+     * (provided that is possible)
      *
-     *  **EXPERIMENTAL** This is slower and (perhaps - thorough testing required)
-     *  not that awesome.
+     *  **EXPERIMENTAL** This is slower and not that awesome.
      *
      *  @param ds
      *  @param mst_skiplist
@@ -490,7 +489,7 @@ protected:
      *
      *  @return The number of performed merges.
      */
-    Py_ssize_t do_genie_new(CGiniDisjointSets* ds, CIntDict<Py_ssize_t>* mst_skiplist,
+    Py_ssize_t do_genie_experimental_forced_merge(CGiniDisjointSets* ds, CIntDict<Py_ssize_t>* mst_skiplist,
         Py_ssize_t n_clusters, double gini_threshold, std::vector<Py_ssize_t>* links)
     {
         if (n_clusters > this->get_max_n_clusters()) {
@@ -568,8 +567,8 @@ protected:
 
 
 public:
-    CGenie(T* mst_d, Py_ssize_t* mst_i, Py_ssize_t n, bool noise_leaves=false, bool new_merge=false)
-        : CGenieBase<T>(mst_d, mst_i, n, noise_leaves), new_merge(new_merge)
+    CGenie(T* mst_d, Py_ssize_t* mst_i, Py_ssize_t n, bool noise_leaves=false, bool experimental_forced_merge=false)
+        : CGenieBase<T>(mst_d, mst_i, n, noise_leaves), experimental_forced_merge(experimental_forced_merge)
     {
         ;
     }
@@ -595,8 +594,8 @@ public:
         CIntDict<Py_ssize_t> mst_skiplist(this->n - 1);
         this->mst_skiplist_init(&mst_skiplist);
 
-        if (new_merge) {
-            this->results.it = this->do_genie_new(&(this->results.ds),
+        if (experimental_forced_merge) {
+            this->results.it = this->do_genie_experimental_forced_merge(&(this->results.ds),
                 &mst_skiplist, n_clusters, gini_threshold,
                 &(this->results.links));
         } else {
@@ -614,8 +613,9 @@ public:
 
 /*! GIc (Genie+Information Criterion) Hierarchical Clustering Algorithm
  *
- *  GIc has been proposed by Anna Cena in [1] and was inspired
- *  by Mueller's (et al.) ITM [2] and Gagolewski's (et al.) Genie [3]
+ *  GIc has been originally proposed by Anna Cena in [1] and was inspired
+ *  by Mueller's (et al.) ITM [2] and Gagolewski's (et al.) Genie [3];
+ *  see also [4].
  *
  *  References
  *  ==========
@@ -630,6 +630,10 @@ public:
  *  [3] Gagolewski M., Bartoszuk M., Cena A.,
  *  Genie: A new, fast, and outlier-resistant hierarchical clustering algorithm,
  *  Information Sciences 363, 2016, pp. 8-23. doi:10.1016/j.ins.2016.05.003
+ *
+ *  [4] Gagolewski M., Cena A., Bartoszuk M., Brzozowski L.,
+ *  Clustering with Minimum Spanning Trees: How Good Can It Be?,
+ *  in preparation, 2023.
  */
 template <class T>
 class CGIc : public CGenie<T> {
@@ -817,7 +821,7 @@ public:
 
                 // singletons should be merged first
                 // (we assume that they have cluster_d_sums==Inf
-                // (this was not addressed in Mueller's in his paper)
+                // (this was not addressed in Mueller's paper)
                 if (cluster_d_sums[i1] < 1e-12 || cluster_d_sums[i2] < 1e-12) {
                     max_which = j;
                     break;
@@ -867,8 +871,6 @@ public:
         }
     }
 };
-
-
 
 
 #endif

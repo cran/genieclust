@@ -2,7 +2,7 @@
 
 # ############################################################################ #
 #                                                                              #
-#   Copyleft (C) 2020-2023, Marek Gagolewski <https://www.gagolewski.com>      #
+#   Copyleft (C) 2020-2024, Marek Gagolewski <https://www.gagolewski.com>      #
 #                                                                              #
 #                                                                              #
 #   This program is free software: you can redistribute it and/or modify       #
@@ -85,8 +85,8 @@
 #' the resulting partition tree (dendrogram) might violate
 #' the ultrametricity property (merges might occur at levels that
 #' are not increasing w.r.t. a between-cluster distance).
-#' Departures from ultrametricity are corrected by applying
-#' \code{height = rev(cummin(rev(height)))}.
+#' \code{gclust()} automatically corrects departures from
+#' ultrametricity by applying \code{height = rev(cummin(rev(height)))}.
 #'
 #'
 #' @param d a numeric matrix (or an object coercible to one,
@@ -153,8 +153,9 @@
 #' \doi{10.1007/978-3-642-37456-2_14}.
 #'
 #' Gagolewski M., Cena A., Bartoszuk M., Brzozowski L.,
-#' \emph{Clustering with minimum spanning trees: How good can it be?},
-#' 2023, under review (preprint), \doi{10.48550/arXiv.2303.05679}.
+#' Clustering with minimum spanning trees: How good can it be?,
+#' \emph{Journal of Classification}, 2024, in press,
+#' \doi{10.1007/s00357-024-09483-1}.
 #'
 #'
 #' @examples

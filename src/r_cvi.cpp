@@ -3,7 +3,7 @@
  *  Code originally contributed in <https://github.com/gagolews/optim_cvi>,
  *  see https://doi.org/10.1016/j.ins.2021.10.004.
  *
- *  Copyleft (C) 2020-2023, Marek Gagolewski <https://www.gagolewski.com>
+ *  Copyleft (C) 2020-2024, Marek Gagolewski <https://www.gagolewski.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License
@@ -144,8 +144,10 @@ std::vector<Py_ssize_t> translateLabels_fromR(const Rcpp::NumericVector& x, Py_s
 //' 620-636, 2021, \doi{10.1016/j.ins.2021.10.004};
 //' preprint: \url{https://raw.githubusercontent.com/gagolews/bibliography/master/preprints/2021cvi.pdf}.
 //'
-//' Gagolewski M., \emph{A Framework for Benchmarking Clustering Algorithms},
-//' 2022, \url{https://clustering-benchmarks.gagolewski.com}.
+//' Gagolewski M., A Framework for Benchmarking Clustering Algorithms,
+//' \emph{SoftwareX} 20, 2022, 101270,
+//' \doi{10.1016/j.softx.2022.101270},
+//' \url{https://clustering-benchmarks.gagolewski.com}.
 //'
 //' Rousseeuw P.J., Silhouettes: A Graphical Aid to the Interpretation and
 //' Validation of Cluster Analysis, \emph{Computational and Applied Mathematics}

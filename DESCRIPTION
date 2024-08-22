@@ -2,8 +2,8 @@ Package: genieclust
 Type: Package
 Title: Fast and Robust Hierarchical Clustering with Noise Points
         Detection
-Version: 1.1.5-2
-Date: 2023-10-18
+Version: 1.1.6
+Date: 2024-08-22
 Authors@R: c(
     person("Marek", "Gagolewski",
         role = c("aut", "cre", "cph"),
@@ -44,9 +44,9 @@ Suggests: datasets, mlpack
 LinkingTo: Rcpp
 Encoding: UTF-8
 SystemRequirements: OpenMP
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.2
 NeedsCompilation: yes
-Packaged: 2023-10-18 08:43:24 UTC; gagolews
+Packaged: 2024-08-22 08:18:47 UTC; gagolews
 Author: Marek Gagolewski [aut, cre, cph]
     (<https://orcid.org/0000-0003-0637-6028>),
   Maciej Bartoszuk [ctb],
@@ -54,4 +54,4 @@ Author: Marek Gagolewski [aut, cre, cph]
   Peter M. Larsen [ctb]
 Maintainer: Marek Gagolewski <marek@gagolewski.com>
 Repository: CRAN
-Date/Publication: 2023-10-18 09:50:06 UTC
+Date/Publication: 2024-08-22 16:50:01 UTC

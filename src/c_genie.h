@@ -1,6 +1,6 @@
-/*  The Genie++ Clustering Algorithm
+/*  The Genie Clustering Algorithm
  *
- *  Copyleft (C) 2018-2024, Marek Gagolewski <https://www.gagolewski.com>
+ *  Copyleft (C) 2018-2025, Marek Gagolewski <https://www.gagolewski.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License
@@ -20,7 +20,6 @@
 #include "c_common.h"
 #include <algorithm>
 #include <vector>
-#include <deque>
 #include <cmath>
 
 #include "c_gini_disjoint_sets.h"
@@ -37,7 +36,7 @@ class CGenieBase {
 protected:
 
     /*!  Stores the clustering result as obtained by
-     *   CGenie::apply_genie() or CGIc::apply_gic()
+     *   CGenie::compute() or CGIc::compute()
      */
     struct CGenieResult {
 
@@ -58,12 +57,12 @@ protected:
 
 
     Py_ssize_t* mst_i;   /*!< n-1 edges of the MST,
-                       * given by c_contiguous (n-1)*2 indices;
-                       * (-1, -1) denotes a no-edge and will be ignored
-                       */
-    T* mst_d;         //<! n-1 edge weights
+                          * given by c_contiguous (n-1)*2 indices;
+                          * (-1, -1) denotes a no-edge and will be ignored
+                          */
+    T* mst_d;            //<! n-1 edge weights, sorted increasingly
     Py_ssize_t n;        //<! number of points
-    bool noise_leaves;//<! mark leaves as noise points?
+    bool skip_leaves;    //<! mark leaves as noise points?
 
     std::vector<Py_ssize_t> deg; //<! deg[i] denotes the degree of the i-th vertex
 
@@ -94,14 +93,11 @@ protected:
             if (i1 < 0 || i2 < 0) {
                 continue; // a no-edge -> ignore
             }
-            if (!this->noise_leaves || (this->deg[i1]>1 && this->deg[i2]>1)) {
+            if (!this->skip_leaves || (this->deg[i1]>1 && this->deg[i2]>1)) {
                 (*mst_skiplist)[i] = i; /*only the key is important, not the value*/
             }
         }
     }
-
-
-
 
     /** internal, used by get_labels(n_clusters, res) */
     Py_ssize_t get_labels(CGiniDisjointSets* ds, Py_ssize_t* res) {
@@ -132,17 +128,17 @@ protected:
 
 
 public:
-    CGenieBase(T* mst_d, Py_ssize_t* mst_i, Py_ssize_t n, bool noise_leaves)
+    CGenieBase(T* mst_d, Py_ssize_t* mst_i, Py_ssize_t n, bool skip_leaves)
         : deg(n), denoise_index(n), denoise_index_rev(n)
     {
         this->mst_d = mst_d;
         this->mst_i = mst_i;
         this->n = n;
-        this->noise_leaves = noise_leaves;
+        this->skip_leaves = skip_leaves;
 
         // Py_ssize_t missing_mst_edges = 0;
         for (Py_ssize_t i=0; i<n-1; ++i) {
-            if (mst_i[i] < 0 || mst_i[i] < 0) {
+            if (mst_i[2*i+0] < 0 || mst_i[2*i+1] < 0) {
                 // missing_mst_edges++;
                 continue;
             }
@@ -156,7 +152,7 @@ public:
 
         // Create the non-noise points' translation table (for GiniDisjointSets)
         // and count the number of noise points
-        if (noise_leaves) {
+        if (skip_leaves) {
             noise_count = 0;
             Py_ssize_t j = 0;
             for (Py_ssize_t i=0; i<n; ++i) {
@@ -190,7 +186,7 @@ public:
             if (i1 < 0 || i2 < 0) {
                 continue; // a no-edge -> ignore
             }
-            if (!this->noise_leaves || (this->deg[i1]>1 && this->deg[i2]>1)) {
+            if (!this->skip_leaves || (this->deg[i1]>1 && this->deg[i2]>1)) {
                 forest_components.merge(this->denoise_index_rev[i1], this->denoise_index_rev[i2]);
             }
         }
@@ -311,15 +307,19 @@ public:
         return this->results.it;
     }
 
-    /*! Set res[i] to true if the i-th point is a noise one.
+
+    /*! Set res[i] to true if skip_leaves is true and
+     * the i-th point is a noise/boundary node,
+     * i.e., a leaf of the spanning tree.
      *
-     *  Makes sense only if noise_leaves==true
+     * TODO: Like in Lumbermark, this could depend on n_clusters
+     * and mark nodes incident to cut edges as boundary points too.
      *
      *  @param res [out] array of length n
      */
-    void get_noise_status(bool* res) const {
+    void get_is_noise(int* res) const {
         for (Py_ssize_t i=0; i<n; ++i) {
-            res[i] = (this->noise_leaves && this->deg[i] <= 1);
+            res[i] = (this->skip_leaves && this->deg[i] <= 1);
         }
     }
 
@@ -327,39 +327,37 @@ public:
 
 
 
-/*!  The Genie++ Hierarchical Clustering Algorithm
+/*!  The Genie Hierarchical Clustering Algorithm
  *
  *   The Genie algorithm (Gagolewski et al., 2016) links two clusters
  *   in such a way that a chosen economic inequality measure
- *   (here, the Gini index) of the cluster sizes does not increase drastically
- *   above a given threshold. The method most often outperforms
- *   the Ward or average linkage, k-means, spectral clustering,
- *   DBSCAN, Birch and others in terms of the clustering
- *   quality on benchmark data while retaining the speed of the single
- *   linkage algorithm.
+ *   (here, the Gini index) of the cluster sizes does not go too far above
+ *   a given threshold. The method outperforms many other clustering algorithms
+ *   in terms of the clustering quality on many benchmark datasets
+ *   whilst retaining the speed of the single linkage algorithm.
  *
  *   This is a re-implementation of the original (Gagolewski et al., 2016)
  *   algorithm. New features include:
- *   1. Given a pre-computed minimum spanning tree (MST),
- *   it only requires amortised O(n sqrt(n))-time.
- *   2. MST leaves can be
- *   marked as noise points (if `noise_leaves==True`). This is useful,
- *   if the Genie algorithm is applied on the MST with respect to
- *   the HDBSCAN-like mutual reachability distance.
- *   3. (option-experimental) During merge, first pair of clusters that would
- *   give a decrease of the Gini index below the threshold is chosen
- *   (or the one that gives the smallest Gini index if that's not possible)
- *       -- turns out to be slower and worse on benchmark data.
- *   4. The MST need not be connected (is a spanning forest) (e.g., if it
- *   computed based on a disconnected k-NN graph) - each component
- *   will never be merged with any other one.
+ *
+ *   1. Given a pre-computed minimum spanning tree (MST) /actually, any kind
+ *   of a spanning tree/, this implementation requires amortised
+ *   O(n sqrt(n))-time only.
+ *
+ *   2. The leaves of the MST can be marked as noise points
+ *   (if `skip_leaves==True`).  This is useful, if the Genie algorithm is
+ *   applied on the MST with respect to the HDBSCAN-like mutual reachability
+ *   distance.
+ *
+ *   3. The MST does not need to be connected (is a spanning forest)
+ *   (e.g., if it is computed based on a disconnected k-NN graph) -
+ *   each connected component will never be merged with any other one.
  *
  *
  *
  *   References
  *   ===========
  *
- *   Gagolewski M., Bartoszuk M., Cena A.,
+ *   Gagolewski, M., Bartoszuk, M., Cena, A.,
  *   Genie: A new, fast, and outlier-resistant hierarchical clustering algorithm,
  *   Information Sciences 363, 2016, pp. 8-23. doi:10.1016/j.ins.2016.05.003
  */
@@ -367,9 +365,10 @@ template <class T>
 class CGenie : public CGenieBase<T> {
 protected:
 
-    bool experimental_forced_merge; //<! EXPERIMENTAL (worse) if there are two clusters, both of the smallest sizes, try merging them first
+    // bool experimental_forced_merge; //<! EXPERIMENTAL (worse) if there are two clusters, both of the smallest sizes, try merging them first
 
-    /*! Run the Genie++ partitioning.
+
+    /*! Run the Genie partitioning.
      *
      *  @param ds
      *  @param mst_skiplist
@@ -473,11 +472,13 @@ protected:
     }
 
 
-
+#if 0
     /*! Merge a pair of sets that reduces the Gini index below the threshold
      * (provided that is possible)
      *
      *  **EXPERIMENTAL** This is slower and not that awesome.
+     *
+     *  TODO: remove it.
      *
      *  @param ds
      *  @param mst_skiplist
@@ -529,7 +530,7 @@ protected:
                     best_idx = last_idx;
                 }
 
-//                 printf("    %ld-%ld %.3lf %.3lf\n", i1r, i2r, test_gini, gini_threshold);
+//                 GENIECLUST_PRINT("    %ld-%ld %.3lf %.3lf\n", i1r, i2r, test_gini, gini_threshold);
 
                 if (best_gini <= gini_threshold)
                     break;
@@ -556,19 +557,19 @@ protected:
             else
                 ds->merge(i1r, i2r);
 
-//             printf("%ld-%ld %.3lf\n", i1r, i2r, ds->get_gini());
+//             GENIECLUST_PRINT("%ld-%ld %.3lf\n", i1r, i2r, ds->get_gini());
 
             it++;
         }
 
         return it; // number of merges performed
     }
-
+#endif
 
 
 public:
-    CGenie(T* mst_d, Py_ssize_t* mst_i, Py_ssize_t n, bool noise_leaves=false, bool experimental_forced_merge=false)
-        : CGenieBase<T>(mst_d, mst_i, n, noise_leaves), experimental_forced_merge(experimental_forced_merge)
+    CGenie(T* mst_d, Py_ssize_t* mst_i, Py_ssize_t n, bool skip_leaves=false)
+        : CGenieBase<T>(mst_d, mst_i, n, skip_leaves)
     {
         ;
     }
@@ -576,14 +577,14 @@ public:
     CGenie() : CGenie(NULL, NULL, 0, false) { }
 
 
-    /*! Run the Genie++ algorithm
+    /*! Run the Genie algorithm
      *
      * @param n_clusters number of clusters to find, 1 for the complete hierarchy
      *    (warning: the algorithm might stop early if there are many noise points
      *     or the number of clusters to detect is > 1).
      * @param gini_threshold the Gini index threshold
      */
-    void apply_genie(Py_ssize_t n_clusters, double gini_threshold)
+    void compute(Py_ssize_t n_clusters, double gini_threshold)
     {
         if (n_clusters < 1)
             throw std::domain_error("n_clusters must be >= 1");
@@ -594,15 +595,16 @@ public:
         CIntDict<Py_ssize_t> mst_skiplist(this->n - 1);
         this->mst_skiplist_init(&mst_skiplist);
 
-        if (experimental_forced_merge) {
+        #if 0
+        if (experimental_forced_merge)
             this->results.it = this->do_genie_experimental_forced_merge(&(this->results.ds),
                 &mst_skiplist, n_clusters, gini_threshold,
                 &(this->results.links));
-        } else {
+        else
+        #endif
             this->results.it = this->do_genie(&(this->results.ds),
                 &mst_skiplist, n_clusters, gini_threshold,
                 &(this->results.links));
-        }
     }
 
 };
@@ -617,29 +619,30 @@ public:
  *  by Mueller's (et al.) ITM [2] and Gagolewski's (et al.) Genie [3];
  *  see also [4].
  *
+ *
  *  References
  *  ==========
  *
- *  [1] Cena A., Adaptive hierarchical clustering algorithms based on
+ *  [1] Cena, A., Adaptive hierarchical clustering algorithms based on
  *  data aggregation methods, PhD Thesis, Systems Research Institute,
  *  Polish Academy of Sciences 2018.
  *
- *  [2] Mueller A., Nowozin S., Lampert C.H., Information Theoretic
+ *  [2] Mueller, A., Nowozin, S., Lampert, C.H., Information Theoretic
  *  Clustering using Minimum Spanning Trees, DAGM-OAGM 2012.
  *
- *  [3] Gagolewski M., Bartoszuk M., Cena A.,
+ *  [3] Gagolewski, M., Bartoszuk, M., Cena, A.,
  *  Genie: A new, fast, and outlier-resistant hierarchical clustering algorithm,
  *  Information Sciences 363, 2016, pp. 8-23. doi:10.1016/j.ins.2016.05.003
  *
- *  [4] Gagolewski M., Cena A., Bartoszuk M., Brzozowski L.,
+ *  [4] Gagolewski, M., Cena, A., Bartoszuk, M., Brzozowski, L.,
  *  Clustering with Minimum Spanning Trees: How Good Can It Be?,
- *  in preparation, 2023.
+ *  Journal of Classification 42, 2025, 90-112. doi:10.1007/s00357-024-09483-1
  */
 template <class T>
 class CGIc : public CGenie<T> {
 protected:
 
-    /*! Run the Genie++ algorithm with different thresholds for the Gini index
+    /*! Run the Genie algorithm with different thresholds for the Gini index
      *  and determine the intersection of all the resulting
      *  n_clusters-partitions; for this, we need the union of the
      *  set of MST edges that were left "unmerged".
@@ -666,7 +669,7 @@ protected:
                 Py_ssize_t i2 = this->mst_i[2*i+1];
                 if (i1 < 0 || i2 < 0)
                     continue; // a no-edge -> ignore
-                if (!this->noise_leaves || (this->deg[i1] > 1 && this->deg[i2] > 1))
+                if (!this->skip_leaves || (this->deg[i1] > 1 && this->deg[i2] > 1))
                     unused_edges.push_back(i);
             }
             unused_edges.push_back(this->n - 1);  // sentinel
@@ -710,8 +713,8 @@ protected:
     }
 
 public:
-    CGIc(T* mst_d, Py_ssize_t* mst_i, Py_ssize_t n, bool noise_leaves=false)
-        : CGenie<T>(mst_d, mst_i, n, noise_leaves)
+    CGIc(T* mst_d, Py_ssize_t* mst_i, Py_ssize_t n, bool skip_leaves=false)
+        : CGenie<T>(mst_d, mst_i, n, skip_leaves)
     {
         if (this->forest_components.get_k() > 1)
             throw std::domain_error("MST is not connected; this is not (yet) supported");
@@ -731,7 +734,7 @@ public:
      * @param gini_thresholds array of size n_thresholds
      * @param n_thresholds size of gini_thresholds
      */
-    void apply_gic(Py_ssize_t n_clusters,
+    void compute(Py_ssize_t n_clusters,
                    Py_ssize_t add_clusters, double n_features,
                    double* gini_thresholds, Py_ssize_t n_thresholds)
     {
@@ -778,7 +781,7 @@ public:
             if (i1 < 0 || i2 < 0)
                 continue; // a no-edge -> ignore
 
-            if (!this->noise_leaves || (this->deg[i1] > 1 && this->deg[i2] > 1)) {
+            if (!this->skip_leaves || (this->deg[i1] > 1 && this->deg[i2] > 1)) {
                 GENIECLUST_ASSERT(this->results.it < this->n-1);
                 this->results.links[this->results.it++] = i;
                 i1 = this->results.ds.find(this->denoise_index_rev[i1]);
@@ -789,7 +792,7 @@ public:
                 cluster_sizes[i1]  += cluster_sizes[i2];
                 cluster_d_sums[i1] += cluster_d_sums[i2] + this->mst_d[i];
                 cluster_sizes[i2]   = 0;
-                cluster_d_sums[i2]  = INFTY;
+                cluster_d_sums[i2]  = INFINITY;
             }
         }
         GENIECLUST_ASSERT(cur_unused_edges == num_unused_edges); // sentinel
@@ -808,7 +811,7 @@ public:
 
         while (num_unused_edges > 0 && this->results.it<this->get_max_n_clusters() - n_clusters) {
             Py_ssize_t max_which = -1;
-            double  max_obj = -INFTY;
+            double  max_obj = -INFINITY;
             for (Py_ssize_t j=0; j<num_unused_edges; ++j) {
                 Py_ssize_t i = unused_edges[j];
                 Py_ssize_t i1 = this->mst_i[2*i+0];
@@ -821,7 +824,7 @@ public:
 
                 // singletons should be merged first
                 // (we assume that they have cluster_d_sums==Inf
-                // (this was not addressed in Mueller's paper)
+                // (this was not addressed in A.Mueller's paper)
                 if (cluster_d_sums[i1] < 1e-12 || cluster_d_sums[i2] < 1e-12) {
                     max_which = j;
                     break;
@@ -864,7 +867,7 @@ public:
             cluster_sizes[i1]  += cluster_sizes[i2];
             cluster_d_sums[i1] += cluster_d_sums[i2]+this->mst_d[i];
             cluster_sizes[i2] = 0;
-            cluster_d_sums[i2] = INFTY;
+            cluster_d_sums[i2] = INFINITY;
 
             unused_edges[max_which] = unused_edges[num_unused_edges-1];
             num_unused_edges--;

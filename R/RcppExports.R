@@ -7,7 +7,8 @@
 #' The functions described in this section quantify the similarity between
 #' two label vectors \code{x} and \code{y} which represent two partitions
 #' of a set of \eqn{n} elements into, respectively, \eqn{K} and \eqn{L}
-#' nonempty and pairwise disjoint subsets.
+#' nonempty and pairwise disjoint subsets; for a review, refer
+#' to the paper by Gagolewski (2025).
 #'
 #' For instance, \code{x} and \code{y} can represent two clusterings
 #' of a dataset with \eqn{n} observations specified by two vectors
@@ -27,15 +28,15 @@
 #' represent the same 2-partition.
 #'
 #' @details
-#' \code{normalized_clustering_accuracy()} (Gagolewski, 2023)
-#' is an asymmetric external cluster validity measure
-#' which assumes that the label vector \code{x} (or rows in the confusion
+#' \code{normalized_clustering_accuracy()} is an asymmetric external cluster
+#' validity measure proposed by Gagolewski (2025).
+#' It assumes that the label vector \code{x} (or rows in the confusion
 #' matrix) represents the reference (ground truth) partition.
-#' It is an average proportion of correctly classified points in each cluster
-#' above the worst case scenario of uniform membership assignment,
-#' with cluster ID matching based on the solution to the maximal linear
+#' It is the average proportion of correctly classified points in each cluster
+#' above the worst case scenario representing the uniform membership assignment,
+#' with the cluster ID matching based on the solution to the maximal linear
 #' sum assignment problem; see \code{\link{normalized_confusion_matrix}}).
-#' It is given by:
+#' The index is given by:
 #' \eqn{\max_\sigma \frac{1}{K} \sum_{j=1}^K \frac{c_{\sigma(j), j}-c_{\sigma(j),\cdot}/K}{c_{\sigma(j),\cdot}-c_{\sigma(j),\cdot}/K}},
 #' where \eqn{C} is a confusion matrix with \eqn{K} rows and \eqn{L} columns,
 #' \eqn{\sigma} is a permutation of the set \eqn{\{1,\dots,\max(K,L)\}}, and
@@ -44,13 +45,13 @@
 #' and \eqn{0/0=0}.
 #'
 #' \code{normalized_pivoted_accuracy()} is defined as
-#' \eqn{(\max_\sigma \sum_{j=1}^{\max(K,L)} c_{\sigma(j),j}/n-1/\max(K,L))/(1-1/\max(K,L))},
+#' \eqn{(\max_\sigma \sum_{j=1}^{\max(K,L)} \frac{c_{\sigma(j),j}/n-1/\max(K,L)}{1-1/\max(K,L)}},
 #' where \eqn{\sigma} is a permutation of the set \eqn{\{1,\dots,\max(K,L)\}},
 #' and \eqn{n} is the sum of all elements in \eqn{C}.
 #' For non-square matrices, missing rows/columns are assumed
 #' to be filled with 0s.
 #'
-#' \code{pair_sets_index()} (PSI) was introduced in (Rezaei, Franti, 2016).
+#' \code{pair_sets_index()} (PSI) was introduced by Rezaei and Franti (2016).
 #' The simplified PSI assumes E=1 in the definition of the index,
 #' i.e., uses Eq. (20) in the said paper instead of Eq. (18).
 #' For non-square matrices, missing rows/columns are assumed
@@ -58,20 +59,20 @@
 #'
 #' \code{rand_score()} gives the Rand score (the "probability" of agreement
 #' between the two partitions) and
-#' \code{adjusted_rand_score()} is its version corrected for chance,
-#' see (Hubert, Arabie, 1985): its expected value is 0 given two independent
+#' \code{adjusted_rand_score()} is its version corrected for chance
+#' (see Hubert, Arabie, 1985): its expected value is 0 given two independent
 #' partitions. Due to the adjustment, the resulting index may be negative
 #' for some inputs.
 #'
 #' Similarly, \code{fm_score()} gives the Fowlkes-Mallows (FM) score
 #' and \code{adjusted_fm_score()} is its adjusted-for-chance version;
-#' see (Hubert, Arabie, 1985).
+#' (see Hubert, Arabie, 1985).
 #'
 #' \code{mi_score()}, \code{adjusted_mi_score()} and
 #' \code{normalized_mi_score()} are information-theoretic
 #' scores, based on mutual information,
 #' see the definition of \eqn{AMI_{sum}} and \eqn{NMI_{sum}}
-#' in (Vinh et al., 2010).
+#' in the paper by Vinh et al. (2010).
 #'
 #'
 #' \code{normalized_confusion_matrix()} computes the confusion matrix
@@ -83,35 +84,35 @@
 #' by calling \code{normalizing_permutation()}.
 #'
 #' Also note that the built-in
-#' \code{\link{table}()} determines the standard confusion matrix.
+#' \code{\link{table}()} function determines the standard confusion matrix.
 #'
 #'
 #' @references
-#' Gagolewski M., A framework for benchmarking clustering algorithms,
+#' Gagolewski, M., A framework for benchmarking clustering algorithms,
 #' \emph{SoftwareX} 20, 2022, 101270,
 #' \doi{10.1016/j.softx.2022.101270},
 #' \url{https://clustering-benchmarks.gagolewski.com}.
 #'
-#' Gagolewski M., Normalised clustering accuracy: An asymmetric external
-#' cluster validity measure, \emph{Journal of Classification}, 2024, in press,
+#' Gagolewski, M., Normalised clustering accuracy: An asymmetric external
+#' cluster validity measure, \emph{Journal of Classification} 42, 2025, 2-30.
 #' \doi{10.1007/s00357-024-09482-2}.
 #'
-#' Hubert L., Arabie P., Comparing partitions,
+#' Hubert, L., Arabie, P., Comparing partitions,
 #' \emph{Journal of Classification} 2(1), 1985, 193-218, esp. Eqs. (2) and (4).
 #'
-#' Meila M., Heckerman D., An experimental comparison of model-based clustering
+#' Meila, M., Heckerman, D., An experimental comparison of model-based clustering
 #' methods, \emph{Machine Learning} 42, 2001, pp. 9-29,
 #' \doi{10.1023/A:1007648401407}.
 #'
-#' Rezaei M., Franti P., Set matching measures for external cluster validity,
+#' Rezaei, M., Franti, P., Set matching measures for external cluster validity,
 #' \emph{IEEE Transactions on Knowledge and Data Mining} 28(8), 2016,
 #' 2173-2186.
 #'
-#' Steinley D., Properties of the Hubert-Arabie adjusted Rand index,
+#' Steinley, D., Properties of the Hubert-Arabie adjusted Rand index,
 #' \emph{Psychological Methods} 9(3), 2004, pp. 386-396,
 #' \doi{10.1037/1082-989X.9.3.386}.
 #'
-#' Vinh N.X., Epps J., Bailey J.,
+#' Vinh, N.X., Epps, J., Bailey, J.,
 #' Information theoretic measures for clusterings comparison:
 #' Variants, properties, normalization and correction for chance,
 #' \emph{Journal of Machine Learning Research} 11, 2010, 2837-2854.
@@ -126,7 +127,7 @@
 #' @param y an integer vector of length n (or an object coercible to)
 #' representing an L-partition of the same set (e.g., the output of a
 #' clustering algorithm we wish to compare with \code{x}),
-#' or NULL (if x is an K*L confusion matrix)
+#' or NULL (if x is an \eqn{K\times L} confusion matrix)
 #'
 #' @param simplified whether to assume E=1 in the definition of the pair sets index index,
 #'     i.e., use Eq. (20) in (Rezaei, Franti, 2016) instead of Eq. (18)
@@ -234,9 +235,9 @@ normalizing_permutation <- function(x, y = NULL) {
 #' @title Internal Cluster Validity Measures
 #'
 #' @description
-#' Implementation of a number of so-called cluster validity indices critically
+#' Implementation of cluster validity indices
 #' reviewed in (Gagolewski, Bartoszuk, Cena, 2021). See Section 2
-#' therein and (Gagolewski, 2022) for the respective definitions.
+#' therein for the respective definitions.
 #'
 #' The greater the index value, the more \emph{valid} (whatever that means)
 #' the assessed partition. For consistency, the Ball-Hall and
@@ -279,38 +280,38 @@ normalizing_permutation <- function(x, y = NULL) {
 #' A single numeric value (the more, the \emph{better}).
 #'
 #' @references
-#' Ball G.H., Hall D.J.,
+#' Ball, G.H., Hall, D.J.,
 #' \emph{ISODATA: A novel method of data analysis and pattern classification},
 #' Technical report No. AD699616, Stanford Research Institute, 1965.
 #'
-#' Bezdek J., Pal N., Some new indexes of cluster validity,
+#' Bezdek, J., Pal, N., Some new indexes of cluster validity,
 #' \emph{IEEE Transactions on Systems, Man, and Cybernetics, Part B} 28,
 #' 1998, 301-315, \doi{10.1109/3477.678624}.
 #'
-#' Calinski T., Harabasz J., A dendrite method for cluster analysis,
+#' Calinski, T., Harabasz, J., A dendrite method for cluster analysis,
 #' \emph{Communications in Statistics} 3(1), 1974, 1-27,
 #' \doi{10.1080/03610927408827101}.
 #'
-#' Davies D.L., Bouldin D.W.,
+#' Davies, D.L., Bouldin, D.W.,
 #' A Cluster Separation Measure,
 #' \emph{IEEE Transactions on Pattern Analysis and Machine Intelligence}
 #' PAMI-1 (2), 1979, 224-227, \doi{10.1109/TPAMI.1979.4766909}.
 #'
-#' Dunn J.C., A Fuzzy Relative of the ISODATA Process and Its Use in Detecting
+#' Dunn, J.C., A Fuzzy Relative of the ISODATA Process and Its Use in Detecting
 #' Compact Well-Separated Clusters, \emph{Journal of Cybernetics} 3(3), 1973,
 #' 32-57, \doi{10.1080/01969727308546046}.
 #'
-#' Gagolewski M., Bartoszuk M., Cena A.,
+#' Gagolewski, M., Bartoszuk, M., Cena, A.,
 #' Are cluster validity measures (in)valid?, \emph{Information Sciences} 581,
 #' 620-636, 2021, \doi{10.1016/j.ins.2021.10.004};
 #' preprint: \url{https://raw.githubusercontent.com/gagolews/bibliography/master/preprints/2021cvi.pdf}.
 #'
-#' Gagolewski M., A Framework for Benchmarking Clustering Algorithms,
+#' Gagolewski, M., A Framework for Benchmarking Clustering Algorithms,
 #' \emph{SoftwareX} 20, 2022, 101270,
 #' \doi{10.1016/j.softx.2022.101270},
 #' \url{https://clustering-benchmarks.gagolewski.com}.
 #'
-#' Rousseeuw P.J., Silhouettes: A Graphical Aid to the Interpretation and
+#' Rousseeuw, P.J., Silhouettes: A Graphical Aid to the Interpretation and
 #' Validation of Cluster Analysis, \emph{Computational and Applied Mathematics}
 #' 20, 1987, 53-65, \doi{10.1016/0377-0427(87)90125-7}.
 #'
@@ -378,14 +379,6 @@ wcnn_index <- function(X, y, M = 25L) {
     .Call(`_genieclust_wcnn_index`, X, y, M)
 }
 
-.mst.default <- function(X, distance = "euclidean", M = 1L, cast_float32 = TRUE, verbose = FALSE) {
-    .Call(`_genieclust_dot_mst_default`, X, distance, M, cast_float32, verbose)
-}
-
-.mst.dist <- function(d, M = 1L, verbose = FALSE) {
-    .Call(`_genieclust_dot_mst_dist`, d, M, verbose)
-}
-
 .genie <- function(mst, k, gini_threshold, postprocess, detect_noise, verbose) {
     .Call(`_genieclust_dot_genie`, mst, k, gini_threshold, postprocess, detect_noise, verbose)
 }
@@ -402,7 +395,7 @@ wcnn_index <- function(X, y, M = 25L) {
 #' \code{devergottini_index()} implements the De Vergottini index.
 #'
 #' @details
-#' These indices can be used to quantify the "inequality" of a numeric sample.
+#' These indices can be used to quantify the "inequality" of a sample.
 #' They can be conceived as normalised measures of data dispersion.
 #' For constant vectors (perfect equity), the indices yield values of 0.
 #' Vectors with all elements but one equal to 0 (perfect inequality),
@@ -410,7 +403,7 @@ wcnn_index <- function(X, y, M = 25L) {
 #' They follow the Pigou-Dalton principle (are Schur-convex):
 #' setting \eqn{x_i = x_i - h} and \eqn{x_j = x_j + h} with \eqn{h > 0}
 #' and \eqn{x_i - h \geq  x_j + h} (taking from the "rich" and
-#' giving to the "poor") decreases the inequality
+#' giving to the "poor") decreases the inequality.
 #'
 #' These indices have applications in economics, amongst others.
 #' The Genie clustering algorithm uses the Gini index as a measure
@@ -423,7 +416,7 @@ wcnn_index <- function(X, y, M = 25L) {
 #'     \sum_{i=1}^{n} (n-2i+1) x_{\sigma(n-i+1)}
 #'     }{
 #'     (n-1) \sum_{i=1}^n x_i
-#'     },
+#'     }.
 #' }
 #'
 #' The normalised Bonferroni index is given by:
@@ -447,20 +440,12 @@ wcnn_index <- function(X, y, M = 25L) {
 #'
 #' Here, \eqn{\sigma} is an ordering permutation of \eqn{(x_1,\dots,x_n)}.
 #'
-#' Time complexity: \eqn{O(n)} for sorted (increasingly) data.
-#' Otherwise, the vector will be sorted.
-#'
 #'
 #' @references
-#' Bonferroni C., \emph{Elementi di Statistica Generale}, Libreria Seber,
+#' Bonferroni, C., \emph{Elementi di Statistica Generale}, Libreria Seber,
 #' Firenze, 1930.
 #'
-#' Gagolewski M., Bartoszuk M., Cena A., Genie: A new, fast, and
-#' outlier-resistant hierarchical clustering algorithm,
-#' \emph{Information Sciences} 363, 2016, pp. 8-23.
-#' \doi{10.1016/j.ins.2016.05.003}
-#'
-#' Gini C., \emph{Variabilita e Mutabilita},
+#' Gini, C., \emph{Variabilita e Mutabilita},
 #' Tipografia di Paolo Cuppini, Bologna, 1912.
 #'
 #'
@@ -472,7 +457,7 @@ wcnn_index <- function(X, y, M = 25L) {
 #' gini_index(c(2, 2, 2, 2, 2))   # no inequality
 #' gini_index(c(0, 0, 10, 0, 0))  # one has it all
 #' gini_index(c(7, 0, 3, 0, 0))   # give to the poor, take away from the rich
-#' gini_index(c(6, 0, 3, 1, 0))   # (a.k.a. Pigou-Dalton principle)
+#' gini_index(c(6, 0, 3, 1, 0))   # (a.k.a. the Pigou-Dalton principle)
 #' bonferroni_index(c(2, 2, 2, 2, 2))
 #' bonferroni_index(c(0, 0, 10, 0, 0))
 #' bonferroni_index(c(7, 0, 3, 0, 0))
@@ -499,5 +484,13 @@ bonferroni_index <- function(x) {
 #' @export
 devergottini_index <- function(x) {
     .Call(`_genieclust_devergottini_index`, x)
+}
+
+.oldmst.matrix <- function(X, distance = "euclidean", M = 1L, cast_float32 = FALSE, verbose = FALSE) {
+    .Call(`_genieclust_dot_oldmst_matrix`, X, distance, M, cast_float32, verbose)
+}
+
+.oldmst.dist <- function(d, M = 1L, verbose = FALSE) {
+    .Call(`_genieclust_dot_oldmst_dist`, d, M, verbose)
 }
 

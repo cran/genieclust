@@ -3,7 +3,7 @@
  *  Code originally contributed in <https://github.com/gagolews/optim_cvi>,
  *  see https://doi.org/10.1016/j.ins.2021.10.004.
  *
- *  Copyleft (C) 2020-2024, Marek Gagolewski <https://www.gagolewski.com>
+ *  Copyleft (C) 2020-2025, Marek Gagolewski <https://www.gagolewski.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License
@@ -19,6 +19,10 @@
 #ifndef __CVI_H
 #define __CVI_H
 
+#define CVI_MAX_N_PRECOMPUTE_DISTANCE 10000
+
+
+
 #include <cmath>
 #include <algorithm>
 #include <functional>
@@ -28,10 +32,6 @@
 #include "c_matrix.h"
 
 
-template<class T>
-inline T square(T x) { return x*x; }
-
-
 /** Computes the squared Euclidean distance between two vectors.
  *
  * @param x c_contiguous vector of length d
@@ -39,11 +39,11 @@ inline T square(T x) { return x*x; }
  * @param d length of both x and y
  * @return sum((x-y)^2)
  */
-FLOAT_T distance_l2_squared(const FLOAT_T* x, const FLOAT_T* y, size_t d)
+inline FLOAT_T distance_l2_squared(const FLOAT_T* x, const FLOAT_T* y, size_t d)
 {
     FLOAT_T ret = 0.0;
     for (size_t i=0; i<d; i++) {
-        ret += (x[i]-y[i])*(x[i]-y[i]);
+        ret += square(x[i]-y[i]);
     }
     return ret;
 }
@@ -123,7 +123,7 @@ public:
     }
 
 
-    const FLOAT_T operator()(size_t i, size_t j) const
+    FLOAT_T operator()(size_t i, size_t j) const
     {
         if (i == j) return 0.0;
         if (precomputed) {
@@ -220,14 +220,14 @@ public:
      *
      * @return
      */
-    const size_t get_K() const { return K; }
+    size_t get_K() const { return K; }
 
 
     /** Returns the number of data points
      *
      * @return
      */
-    const size_t get_n() const { return n; }
+    size_t get_n() const { return n; }
 
 
     /** Assigns a new label vector
@@ -413,7 +413,7 @@ public:
             const size_t _M)
         : ClusterValidityIndex(_X, _K, _allow_undo),
           M((_M<=n-1)?_M:(n-1)),
-          dist(n, M, INFTY),
+          dist(n, M, INFINITY),
           ind(n, M, n)
     {
         GENIECLUST_ASSERT(M>0 && M<n);

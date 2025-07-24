@@ -1,6 +1,6 @@
 /*  class CDisjointSets
  *
- *  Copyleft (C) 2018-2024, Marek Gagolewski <https://www.gagolewski.com>
+ *  Copyleft (C) 2018-2025, Marek Gagolewski <https://www.gagolewski.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License
@@ -36,14 +36,14 @@
  *   package rely on the assumption that the parent id of each
  *   element is always <= than itself.
  */
-class CDisjointSets {
+class CDisjointSets
+{
 
 protected:
     Py_ssize_t n;                //!< number of distinct elements
     Py_ssize_t k;                //!< number of subsets
     std::vector<Py_ssize_t> par; /*!< par[i] is the id of the parent
-                               *   of the i-th element
-                               */
+                                  *   of the i-th element */
 
 public:
     /*!  Starts with a "weak" partition {  {0}, {1}, ..., {n-1}  },
@@ -56,6 +56,12 @@ public:
     {
         // if (n < 0) throw std::domain_error("n < 0");
         this->n = n;
+        reset();
+    }
+
+
+    void reset()
+    {
         this->k = n;
         for (Py_ssize_t i=0; i<n; ++i)
             this->par[i] = i;
@@ -70,24 +76,40 @@ public:
 
     /*! Returns the current number of sets in the partition.
      */
-    Py_ssize_t get_k() const { return this->k; }
+    inline Py_ssize_t get_k() const { return this->k; }
 
 
     /*! Returns the total cardinality of the set being partitioned.
      */
-    Py_ssize_t get_n() const { return this->n; }
+    inline Py_ssize_t get_n() const { return this->n; }
+
+
+    /*! Danger zone! Ensure find() was called upon each element */
+    inline Py_ssize_t get_parent(Py_ssize_t x) const { return this->par[x]; }
+    inline const Py_ssize_t* get_parents() const { return this->par.data(); }
 
 
     /*! Finds the subset id for a given x.
      *
      *  @param x a value in {0,...,n-1}
      */
-    Py_ssize_t find(Py_ssize_t x) {
-        if (x < 0 || x >= this->n) throw std::domain_error("x not in [0,n)");
+    Py_ssize_t find(Py_ssize_t x)
+    {
+        if (x < 0 || x >= this->n) throw std::domain_error("CDisjointSets: x not in [0,n)");
 
-        if (this->par[x] != x) {
-            this->par[x] = this->find(this->par[x]);
-        }
+        if (this->par[x] == x) return x;
+
+        this->par[x] = this->find(this->par[x]);
+
+        // if (this->par[x] == this->par[this->par[x]]) {
+        //     // common case - eliminate recursion
+        //     this->par[x] = this->par[this->par[x]];
+        // }
+        // else {
+        //     this->par[this->par[x]] = this->find(this->par[this->par[x]]);
+        //     this->par[x] = this->par[this->par[x]];
+        // }
+
         return this->par[x];
     }
 
@@ -106,10 +128,11 @@ public:
      *   @param x a value in {0,...,n-1}
      *   @param y a value in {0,...,n-1}
      */
-    virtual Py_ssize_t merge(Py_ssize_t x, Py_ssize_t y) { // well, union is a reserved C++ keyword :)
-        x = this->find(x); // includes a range check for x
-        y = this->find(y); // includes a range check for y
-        if (x == y) throw std::invalid_argument("find(x) == find(y)");
+    virtual Py_ssize_t merge(Py_ssize_t x, Py_ssize_t y)  // well, union is a reserved C++ keyword :)
+    {
+        x = this->find(x);  // includes a range check for x
+        y = this->find(y);  // includes a range check for y
+        if (x == y) throw std::invalid_argument("CDisjointSets: find(x) == find(y)");
         if (y < x) std::swap(x, y);
 
         this->par[y] = x;

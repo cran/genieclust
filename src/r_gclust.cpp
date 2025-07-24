@@ -1,6 +1,6 @@
-/*  The Genie++ Clustering Algorithm - R Wrapper
+/*  The Genie Clustering Algorithm - R Wrapper
  *
- *  Copyleft (C) 2018-2024, Marek Gagolewski <https://www.gagolewski.com>
+ *  Copyleft (C) 2018-2025, Marek Gagolewski <https://www.gagolewski.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License
@@ -16,15 +16,11 @@
 
 #include "c_common.h"
 #include "c_matrix.h"
-#include "c_distance.h"
-#include "c_mst.h"
 #include "c_genie.h"
 #include "c_postprocess.h"
 #include <cmath>
 
 using namespace Rcpp;
-
-
 
 
 /* This function was originally part of our `genie` package for R */
@@ -106,146 +102,6 @@ void internal_generate_order(Py_ssize_t n, NumericMatrix merge, NumericVector or
 }
 
 
-template<typename T>
-NumericMatrix internal_compute_mst(CDistance<T>* D, Py_ssize_t n, Py_ssize_t M, bool verbose)
-{
-    if (M < 1 || M >= n-1)
-        stop("`M` must be an integer in [1, n-1)");
-
-    NumericMatrix ret(n-1, 3);
-
-    CDistance<T>* D2 = NULL;
-    if (M >= 2) { // yep, we need it for M==2 as well
-        if (verbose) GENIECLUST_PRINT("[genieclust] Determining the core distance.\n");
-
-        Py_ssize_t k = M-1;
-        CMatrix<Py_ssize_t> nn_i(n, k);
-        CMatrix<T> nn_d(n, k);
-        Cknn_from_complete(D, n, k, nn_d.data(), nn_i.data());
-
-        NumericMatrix nn_r(n, k);
-
-        std::vector<T> d_core(n);
-        for (Py_ssize_t i=0; i<n; ++i) {
-            d_core[i] = nn_d(i, k-1); // distance to the k-th nearest neighbour
-            GENIECLUST_ASSERT(std::isfinite(d_core[i]));
-
-            for (Py_ssize_t j=0; j<k; ++j) {
-                GENIECLUST_ASSERT(nn_i(i,j) != i);
-                nn_r(i,j) = nn_i(i,j)+1; // 1-based indexing
-            }
-        }
-
-        ret.attr("nn") = nn_r;
-
-        D2 = new CDistanceMutualReachability<T>(d_core.data(), n, D);
-    }
-
-    CMatrix<Py_ssize_t> mst_i(n-1, 2);
-    std::vector<T>  mst_d(n-1);
-
-    if (verbose) GENIECLUST_PRINT("[genieclust] Computing the MST.\n");
-    Cmst_from_complete<T>(D2?D2:D, n, mst_d.data(), mst_i.data(), verbose);
-    if (verbose) GENIECLUST_PRINT("[genieclust] Done.\n");
-
-    if (D2) delete D2;
-
-    for (Py_ssize_t i=0; i<n-1; ++i) {
-//         Rprintf("%d,%d\n", mst_i(i,0), mst_i(i,1));
-        GENIECLUST_ASSERT(mst_i(i,0) < mst_i(i,1));
-        GENIECLUST_ASSERT(std::isfinite(mst_d[i]));
-        ret(i,0) = mst_i(i,0)+1; // R-based indexing
-        ret(i,1) = mst_i(i,1)+1; // R-based indexing
-        ret(i,2) = mst_d[i];
-    }
-
-    return ret;
-}
-
-
-
-
-
-template<typename T>
-NumericMatrix internal_mst_default(
-    NumericMatrix X,
-    String distance,
-    Py_ssize_t M,
-    /*bool use_mlpack, */
-    bool verbose)
-{
-    Py_ssize_t n = X.nrow();
-    Py_ssize_t d = X.ncol();
-    NumericMatrix ret;
-
-    CMatrix<T> X2(REAL(SEXP(X)), n, d, false); // Fortran- to C-contiguous
-
-    for (Py_ssize_t i=0; i<n; i++) {
-        for (Py_ssize_t j=0; j<d; j++) {
-            if (!std::isfinite(X2(i,j)))
-                Rf_error("All elements in the input matrix must be finite/non-missing.");
-        }
-    }
-
-    CDistance<T>* D = NULL;
-    if (distance == "euclidean" || distance == "l2")
-        D = (CDistance<T>*)(new CDistanceEuclideanSquared<T>(X2.data(), n, d));
-    else if (distance == "manhattan" || distance == "cityblock" || distance == "l1")
-        D = (CDistance<T>*)(new CDistanceManhattan<T>(X2.data(), n, d));
-    else if (distance == "cosine")
-        D = (CDistance<T>*)(new CDistanceCosine<T>(X2.data(), n, d));
-    else
-        stop("given `distance` is not supported (yet)");
-
-    ret = internal_compute_mst<T>(D, n, M, verbose);
-    delete D;
-
-    if (distance == "euclidean" || distance == "l2") {
-        for (Py_ssize_t i=0; i<n-1; ++i) {
-            ret(i,2) = sqrt(ret(i,2));
-        }
-    }
-
-    return ret;
-}
-
-
-
-
-
-
-// [[Rcpp::export(".mst.default")]]
-NumericMatrix dot_mst_default(
-    NumericMatrix X,
-    String distance="euclidean",
-    int M=1,
-    bool cast_float32=true,
-    bool verbose=false)
-{
-    if (cast_float32)
-        return internal_mst_default<float >(X, distance, M, verbose);
-    else
-        return internal_mst_default<double>(X, distance, M, verbose);
-}
-
-
-
-// [[Rcpp::export(".mst.dist")]]
-NumericMatrix dot_mst_dist(
-    NumericVector d,
-    int M=1,
-    bool verbose=false)
-{
-    Py_ssize_t n = (Py_ssize_t)round((sqrt(1.0+8.0*d.size())+1.0)/2.0);
-    GENIECLUST_ASSERT(n*(n-1)/2 == d.size());
-
-    CDistancePrecomputedVector<double> D(REAL(SEXP(d)), n);
-
-    return internal_compute_mst<double>(&D, n, M, verbose);
-}
-
-
-
 // [[Rcpp::export(".genie")]]
 IntegerVector dot_genie(
         NumericMatrix mst,
@@ -260,8 +116,8 @@ IntegerVector dot_genie(
     if (gini_threshold < 0.0 || gini_threshold > 1.0)
         stop("`gini_threshold` must be in [0, 1]");
 
-    if (postprocess == "boundary" && detect_noise && Rf_isNull(mst.attr("nn")))
-        stop("`nn` attribute of the MST not set; unable to proceed with this postprocessing action");
+    if (postprocess == "boundary" && detect_noise && Rf_isNull(mst.attr("nn.index")))
+        stop("`nn.index` attribute of the MST not set; unable to proceed with this postprocessing action");
 
     Py_ssize_t n = mst.nrow()+1;
 
@@ -271,13 +127,13 @@ IntegerVector dot_genie(
     std::vector<double>  mst_d(n-1);
 
     for (Py_ssize_t i=0; i<n-1; ++i) {
-        mst_i(i, 0) = (Py_ssize_t)mst(i, 0)-1; // 1-based to 0-based indices
-        mst_i(i, 1) = (Py_ssize_t)mst(i, 1)-1; // 1-based to 0-based indices
+        mst_i(i, 0) = (Py_ssize_t)mst(i, 0)-1;  // 1-based to 0-based indices
+        mst_i(i, 1) = (Py_ssize_t)mst(i, 1)-1;  // 1-based to 0-based indices
         mst_d[i] = mst(i, 2);
     }
 
     CGenie<double> g(mst_d.data(), mst_i.data(), n, detect_noise);
-    g.apply_genie(k, gini_threshold);
+    g.compute(k, gini_threshold);
 
 
     if (verbose) GENIECLUST_PRINT("[genieclust] Postprocessing the outputs.\n");
@@ -286,10 +142,10 @@ IntegerVector dot_genie(
     Py_ssize_t k_detected = g.get_labels(k, xres.data());
 
     if (k_detected != k)
-        Rf_warning("Number of clusters detected is different than the requested one due to the presence of noise points.");
+        Rf_warning("The number of clusters detected is different from the requested one due to the presence of noise points.");
 
     if (detect_noise && postprocess == "boundary") {
-        NumericMatrix nn_r = mst.attr("nn");
+        NumericMatrix nn_r = mst.attr("nn.index");
         GENIECLUST_ASSERT(nn_r.nrow() == n);
         Py_ssize_t M = nn_r.ncol()+1;
         GENIECLUST_ASSERT(M < n);
@@ -344,7 +200,7 @@ List dot_gclust(
     }
 
     CGenie<double> g(mst_d.data(), mst_i.data(), n/*, noise_leaves=M>1*/);
-    g.apply_genie(1, gini_threshold);
+    g.compute(1, gini_threshold);
 
 
     if (verbose) GENIECLUST_PRINT("[genieclust] Postprocessing the outputs.\n");
@@ -384,4 +240,3 @@ List dot_gclust(
         _["order"]  = order
     );
 }
-

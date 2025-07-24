@@ -2,7 +2,7 @@
 
 # ############################################################################ #
 #                                                                              #
-#   Copyleft (C) 2020-2024, Marek Gagolewski <https://www.gagolewski.com>      #
+#   Copyleft (C) 2020-2025, Marek Gagolewski <https://www.gagolewski.com>      #
 #                                                                              #
 #                                                                              #
 #   This program is free software: you can redistribute it and/or modify       #
@@ -28,6 +28,8 @@
 #' @importFrom Rcpp evalCpp
 #' @importFrom stats hclust
 #' @importFrom stats cutree
+#' @importFrom quitefastmst knn_euclid
+#' @importFrom quitefastmst mst_euclid
 #' @importFrom stats dist
 #' @importFrom utils capture.output
 #' @keywords internal

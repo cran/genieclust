@@ -3,7 +3,7 @@
  *  Code originally contributed in <https://github.com/gagolews/optim_cvi>,
  *  see https://doi.org/10.1016/j.ins.2021.10.004.
  *
- *  Copyleft (C) 2020-2024, Marek Gagolewski <https://www.gagolewski.com>
+ *  Copyleft (C) 2020-2025, Marek Gagolewski <https://www.gagolewski.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License
@@ -85,7 +85,7 @@ public:
         // The centroids are up-to-date.
         for (size_t i=0; i<K; ++i) {
             if (count[i] <= 1)  // singletons not permitted
-                return -INFTY;  // negative!!
+                return -INFINITY;  // negative!!
             R[i] = 0.0;
         }
         for (size_t i=0; i<n; ++i) {

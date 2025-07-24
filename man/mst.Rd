@@ -12,7 +12,6 @@ mst(d, ...)
   d,
   distance = c("euclidean", "l2", "manhattan", "cityblock", "l1", "cosine"),
   M = 1L,
-  cast_float32 = TRUE,
   verbose = FALSE,
   ...
 )
@@ -22,94 +21,105 @@ mst(d, ...)
 \arguments{
 \item{d}{either a numeric matrix (or an object coercible to one,
 e.g., a data frame with numeric-like columns) or an
-object of class \code{dist}, see \code{\link[stats]{dist}}}
+object of class \code{dist}; see \code{\link[stats]{dist}}}
 
-\item{...}{further arguments passed to or from other methods}
+\item{...}{further arguments passed to or from other methods,
+in particular, to \code{\link[quitefastmst]{mst_euclid}}
+from the \pkg{quitefastmst} package}
 
-\item{distance}{metric used to compute the linkage, one of:
+\item{distance}{metric used in the case where \code{d} is a matrix; one of:
 \code{"euclidean"} (synonym: \code{"l2"}),
 \code{"manhattan"} (a.k.a. \code{"l1"} and \code{"cityblock"}),
 \code{"cosine"}}
 
-\item{M}{smoothing factor; \code{M} = 1 gives the selected \code{distance};
-otherwise, the mutual reachability distance is used}
-
-\item{cast_float32}{logical; whether to compute the distances using 32-bit
-instead of 64-bit precision floating-point arithmetic (up to 2x faster)}
+\item{M}{smoothing factor; \code{M} = 1 selects the requested
+\code{distance}; otherwise, the corresponding degree-\code{M} mutual
+reachability distance is used; \code{M} should be rather small,
+say, \eqn{\leq 20}}
 
 \item{verbose}{logical; whether to print diagnostic messages
 and progress information}
 }
 \value{
-Matrix of class \code{mst} with n-1 rows and 3 columns:
-\code{from}, \code{to} and \code{dist}. It holds \code{from} < \code{to}.
-Moreover, \code{dist} is sorted nondecreasingly.
-The i-th row gives the i-th edge of the MST.
-\code{(from[i], to[i])} defines the vertices (in 1,...,n)
-and \code{dist[i]} gives the weight, i.e., the
-distance between the corresponding points.
+Returns a numeric matrix of class \code{mst} with \eqn{n-1} rows and
+three columns: \code{from}, \code{to}, and \code{dist} sorted
+nondecreasingly. Its i-th row specifies the i-th edge of the MST
+which is incident to the vertices \code{from[i]} and \code{to[i]} with
+\code{from[i] < to[i]}  (in 1,...,n)
+and \code{dist[i]} gives the corresponding weight, i.e., the
+distance between the point pair.
 
-The \code{method} attribute gives the name of the distance used.
-The \code{Labels} attribute gives the labels of all the input points.
+The \code{Size} attribute specifies the number of points, \eqn{n}.
+The \code{Labels} attribute gives the labels of the input points,
+if available.
+The \code{method} attribute provides the name of the distance function used.
 
-If \code{M} > 1, the \code{nn} attribute gives the indices of the \code{M}-1
-nearest neighbours of each point.
+If \eqn{M>1}, the \code{nn.index} attribute gives the indices
+of the \code{M}-1 nearest neighbours of each point
+and \code{nn.dist} provides the corresponding distances,
+both in the form of an \eqn{n} by \eqn{M-1} matrix.
 }
 \description{
-An parallelised implementation of a Jarnik (Prim/Dijkstra)-like
-algorithm for determining
-a(*) minimum spanning tree (MST) of a complete undirected graph
-representing a set of n points
-with weights given by a pairwise distance matrix.
-
-(*) Note that there might be multiple minimum trees spanning a given graph.
+Determine a(*) minimum spanning tree (MST) of the complete
+undirected graph representing a set of \eqn{n} points
+whose weights correspond to the pairwise distances between the points.
 }
 \details{
-If \code{d} is a numeric matrix of size \eqn{n p},
-the \eqn{n (n-1)/2} distances are computed on the fly, so that \eqn{O(n M)}
-memory is used.
+(*) Note that if the distances are non unique,
+there might be multiple minimum trees spanning a given graph.
 
+If \code{d} is a matrix and the use of Euclidean distance is requested
+(the default), then \code{\link[quitefastmst]{mst_euclid}} is called
+to determine the MST.  It is quite fast in spaces of low intrinsic
+dimensionality, even for 10M points.
 
-The algorithm is parallelised; set the \code{OMP_NUM_THREADS} environment
-variable \code{\link[base]{Sys.setenv}} to control the number of threads
-used.
+Otherwise, a much slower implementation of the Jarník (Prim/Dijkstra)-like
+method, which requires \eqn{O(n^2)} time, is used.  The algorithm is parallelised;
+the number of threads is determined by the \code{OMP_NUM_THREADS} environment
+variable. As a rule of thumb, datasets up to 100k points
+should be processed relatively quickly.
 
-Time complexity is \eqn{O(n^2)} for the method accepting an object of
-class \code{dist} and \eqn{O(p n^2)} otherwise.
-
-If \code{M} >= 2, then the mutual reachability distance \eqn{m(i,j)}
-with smoothing factor \code{M} (see Campello et al. 2013)
+If \eqn{M>1}, then the mutual reachability distance \eqn{m(i,j)}
+with the smoothing factor \eqn{M} (see Campello et al. 2013)
 is used instead of the chosen "raw" distance \eqn{d(i,j)}.
-It holds \eqn{m(i, j)=\max(d(i,j), c(i), c(j))}, where \eqn{c(i)} is
-\eqn{d(i, k)} with \eqn{k} being the (\code{M}-1)-th nearest neighbour of \eqn{i}.
+It holds \eqn{m(i, j)=\max\{d(i,j), c(i), c(j)\}}, where \eqn{c(i)} is
+the core distance, i.e., the distance between the \eqn{i}-th point and
+its (\code{M}-1)-th nearest neighbour.
 This makes "noise" and "boundary" points being "pulled away" from each other.
-Genie++ clustering algorithm (see \code{\link{gclust}})
-with respect to the mutual reachability distance gains the ability to
-identify some observations are noise points.
-
-Note that the case \code{M} = 2 corresponds to the original distance, but we
-determine the 1-nearest neighbours separately as well, which is a bit
-suboptimal; you can file a feature request if this makes your data analysis
-tasks too slow.
+The Genie clustering algorithm (see \code{\link{gclust}}) with respect to
+the mutual reachability distance can mark some observations as noise points.
 }
 \examples{
 library("datasets")
 data("iris")
-X <- iris[1:4]
-tree <- mst(X)
+X <- jitter(as.matrix(iris[1:2]))  # some data
+T <- mst(X)
+plot(X, asp=1, las=1)
+segments(X[T[, 1], 1], X[T[, 1], 2],
+         X[T[, 2], 1], X[T[, 2], 2])
 
 }
 \references{
-Jarnik V., O jistem problemu minimalnim,
+V. Jarník, O jistem problemu minimalnim,
 \emph{Prace Moravske Prirodovedecke Spolecnosti} 6, 1930, 57-63.
 
-Olson C.F., Parallel algorithms for hierarchical clustering,
-\emph{Parallel Comput.} 21, 1995, 1313-1325.
+C.F. Olson, Parallel algorithms for hierarchical clustering,
+\emph{Parallel Computing} 21, 1995, 1313-1325.
 
-Prim R., Shortest connection networks and some generalisations,
-\emph{Bell Syst. Tech. J.} 36, 1957, 1389-1401.
+R. Prim, Shortest connection networks and some generalisations,
+\emph{The Bell System Technical Journal} 36(6), 1957, 1389-1401.
 
-Campello R.J.G.B., Moulavi D., Sander J.,
+O. Borůvka, O jistém problému minimálním, \emph{Práce Moravské
+Přírodovědecké Společnosti} 3, 1926, 37–58.
+
+J.L. Bentley, Multidimensional binary search trees used for associative
+searching, \emph{Communications of the ACM} 18(9), 509–517, 1975,
+\doi{10.1145/361002.361007}.
+W.B. March, R. Parikshit, A.G. Gray, Fast Euclidean minimum spanning
+tree: Algorithm, analysis, and applications, \emph{Proc. 16th ACM SIGKDD
+Intl. Conf. Knowledge Discovery and Data Mining (KDD '10)}, 2010, 603–612.
+
+R.J.G.B. Campello, D. Moulavi, J. Sander,
 Density-based clustering based on hierarchical density estimates,
 \emph{Lecture Notes in Computer Science} 7819, 2013, 160-172,
 \doi{10.1007/978-3-642-37456-2_14}.
@@ -117,10 +127,9 @@ Density-based clustering based on hierarchical density estimates,
 \seealso{
 The official online manual of \pkg{genieclust} at \url{https://genieclust.gagolewski.com/}
 
-Gagolewski M., \pkg{genieclust}: Fast and robust hierarchical clustering, \emph{SoftwareX} 15:100722, 2021, \doi{10.1016/j.softx.2021.100722}.
+Gagolewski, M., \pkg{genieclust}: Fast and robust hierarchical clustering, \emph{SoftwareX} 15:100722, 2021, \doi{10.1016/j.softx.2021.100722}
 
-\code{\link{emst_mlpack}()} for a very fast alternative
-in case of (very) low-dimensional Euclidean spaces (and \code{M} = 1).
+\code{\link[quitefastmst]{mst_euclid}}
 }
 \author{
 \href{https://www.gagolewski.com/}{Marek Gagolewski} and other contributors

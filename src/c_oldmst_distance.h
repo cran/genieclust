@@ -1,6 +1,6 @@
-/*  Various distances (Euclidean, mutual reachability distance, ...)
+/*  Various distances (Euclidean, mutual reachability distance, ...). Used by c_oldmst.h
  *
- *  Copyleft (C) 2018-2024, Marek Gagolewski <https://www.gagolewski.com>
+ *  Copyleft (C) 2018-2025, Marek Gagolewski <https://www.gagolewski.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License
@@ -14,21 +14,12 @@
  */
 
 
-#ifndef __c_distance_h
-#define __c_distance_h
+#ifndef __c_oldmst_distance_h
+#define __c_oldmst_distance_h
 
 #include "c_common.h"
 #include <vector>
 #include <cmath>
-
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-
-
-
-template<class T>
-inline T square(T x) { return x*x; }
 
 
 
@@ -38,7 +29,7 @@ struct CDistance {
     virtual ~CDistance() {}
 
     /*!
-     * @param i point index, 0<=i<n
+     * @param i point index, 0 <= i < n
      * @param M indices
      * @param k length of M
      * @return distances from the i-th point to M[0], .., M[k-1],
@@ -80,7 +71,7 @@ struct CDistancePrecomputedMatrix : public CDistance<T> {
 
 
 /*! A class to "compute" the distances from the i-th point
- *  to all n points based on a pre-computed a vector-form
+ *  to all n points based on a pre-computed
  *  c_contiguous distance vector.
  */
 template<class T>
@@ -151,15 +142,14 @@ struct CDistanceEuclidean : public CDistance<T>  {
         T* __buf = buf.data();
         const T* x = X+d*i;
 
-#ifdef _OPENMP
+#if OPENMP_IS_ENABLED
         #pragma omp parallel for schedule(static)
 #endif
         for (Py_ssize_t j=0; j<k; ++j) {
             Py_ssize_t w = M[j];
             const T* y = X+d*w;
 
-            // or we could use the BLAS snrm2() for increased numerical
-            // stability; are we building a rocket though?
+            // or we could use the BLAS nrm2 / dot
             __buf[w] = 0.0;
             for (Py_ssize_t u=0; u<d; ++u) {
                 __buf[w] += (x[u]-y[u])*(x[u]-y[u]);
@@ -183,6 +173,7 @@ struct CDistanceEuclideanSquared : public CDistance<T>  {
     Py_ssize_t n;
     Py_ssize_t d;
     std::vector<T> buf;
+//    std::vector<T> x2;
 
     /*!
      * @param X n*d c_contiguous array
@@ -190,11 +181,23 @@ struct CDistanceEuclideanSquared : public CDistance<T>  {
      * @param d dimensionality
      */
     CDistanceEuclideanSquared(const T* X, Py_ssize_t n, Py_ssize_t d)
-            : buf(n)
+            : buf(n) /*, x2(n, 0.0)*/
     {
         this->n = n;
         this->d = d;
         this->X = X;
+
+//         T* _x2 = x2.data();
+// #if OPENMP_IS_ENABLED
+//         #pragma omp parallel for schedule(static)
+// #endif
+//         for (Py_ssize_t i=0; i<n; ++i) {
+//             const T* x = X+d*i;
+//             for (Py_ssize_t u=0; u<d; ++u) {
+//                 _x2[i] += (*x)*(*x);
+//                 ++x;
+//             }
+//         }
     }
 
     CDistanceEuclideanSquared()
@@ -204,15 +207,21 @@ struct CDistanceEuclideanSquared : public CDistance<T>  {
         T* __buf = buf.data();
         const T* x = X+d*i;
 
-#ifdef _OPENMP
+#if OPENMP_IS_ENABLED
         #pragma omp parallel for schedule(static)
 #endif
         for (Py_ssize_t j=0; j<k; ++j) {
             Py_ssize_t w = M[j];
             const T* y = X+d*w;
 
-            // or we could use the BLAS snrm2() for increased numerical
-            // stability; are we building a rocket though?
+            // or we could use the BLAS nrm2 / dot
+
+            // this is not significantly faster (x-y)*(x-y)=x**2+y**2-2*x*y
+            // __buf[w] = x2[i]+x2[w];
+            // for (Py_ssize_t u=0; u<d; ++u) {
+            //     __buf[w] -= 2.0*x[u]*y[u];
+            // }
+
             __buf[w] = 0.0;
             for (Py_ssize_t u=0; u<d; ++u) {
                 __buf[w] += (x[u]-y[u])*(x[u]-y[u]);
@@ -253,7 +262,7 @@ struct CDistanceManhattan : public CDistance<T>  {
 
     virtual const T* operator()(Py_ssize_t i, const Py_ssize_t* M, Py_ssize_t k) {
         T* __buf = buf.data();
-#ifdef _OPENMP
+#if OPENMP_IS_ENABLED
         #pragma omp parallel for schedule(static)
 #endif
         for (Py_ssize_t j=0; j<k; ++j) {
@@ -295,7 +304,7 @@ struct CDistanceCosine : public CDistance<T>  {
         this->X = X;
 
         T* __norm = norm.data();
-#ifdef _OPENMP
+#if OPENMP_IS_ENABLED
         #pragma omp parallel for schedule(static)
 #endif
         for (Py_ssize_t i=0; i<n; ++i) {
@@ -313,7 +322,7 @@ struct CDistanceCosine : public CDistance<T>  {
     virtual const T* operator()(Py_ssize_t i, const Py_ssize_t* M, Py_ssize_t k) {
         T*  __buf = buf.data();
         T* __norm = norm.data();
-#ifdef _OPENMP
+#if OPENMP_IS_ENABLED
         #pragma omp parallel for schedule(static)
 #endif
         for (Py_ssize_t j=0; j<k; ++j) {
@@ -341,7 +350,7 @@ struct CDistanceCosine : public CDistance<T>  {
  *  References:
  *  ==========
  *
- *  [1] Campello R.J.G.B., Moulavi D., Sander J.,
+ *  [1] Campello, R.J.G.B., Moulavi, D., Sander, J.,
  *      Density-based clustering based on hierarchical density estimates,
  *      *Lecture Notes in Computer Science* 7819, 2013, 160-172,
  *      doi:10.1007/978-3-642-37456-2_14.
@@ -369,17 +378,42 @@ struct CDistanceMutualReachability : public CDistance<T>
         const T* d = (*d_pairwise)(i, M, k);
         T*  __buf = buf.data();
 
-        #ifdef _OPENMP
+        #if OPENMP_IS_ENABLED
         #pragma omp parallel for schedule(static)
         #endif
         for (Py_ssize_t j=0; j<k; ++j)  { //
-            // buf[w] = max{d[w],d_core[i],d_core[w]}
             Py_ssize_t w = M[j];
             if (w == i) __buf[w] = 0.0;
             else {
-                __buf[w] = d[w];
-                if (d_core[i] > __buf[w]) __buf[w] = d_core[i];
-                if (d_core[w] > __buf[w]) __buf[w] = d_core[w];
+                // buf[w] = max{d[w],d_core[i],d_core[w]}
+                // __buf[w] = d[w];
+                // if (d_core[i] > __buf[w]) __buf[w] = d_core[i];
+                // if (d_core[w] > __buf[w]) __buf[w] = d_core[w];
+
+                T d_core_max;
+                // T d_core_min;
+                if (d_core[i] >= d_core[w]) {
+                    d_core_max = d_core[i];
+                    // d_core_min = d_core[w];
+                }
+                else {
+                    d_core_max = d_core[w];
+                    // d_core_min = d_core[i];
+                }
+
+                if (d_core_max <= d[w]) {
+                    __buf[w] = d[w];
+                }
+                else {
+#define MUTREACH_SHARPEN 1
+#if MUTREACH_SHARPEN == 0
+                    __buf[w] = d_core_max;
+#elif MUTREACH_SHARPEN == 1
+                    // make it unambiguous:
+                    // pulled-away from each other, but ordered w.r.t. the original pairwise distances (increasingly)
+                    __buf[w] = d_core_max+d[w]/(1<<24);
+#endif
+                }
             }
         }
         return __buf;

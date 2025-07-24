@@ -3,7 +3,7 @@
  *  Code originally contributed in <https://github.com/gagolews/optim_cvi>,
  *  see https://doi.org/10.1016/j.ins.2021.10.004.
  *
- *  Copyleft (C) 2020-2024, Marek Gagolewski <https://www.gagolewski.com>
+ *  Copyleft (C) 2020-2025, Marek Gagolewski <https://www.gagolewski.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License
@@ -28,7 +28,7 @@
  *  For given M, returns the overall proportion of
  *  each point's M nearest neighbours belonging to the same cluster.
  *
- *  If there is a cluster of size <= M, the index is -INFTY.
+ *  If there is a cluster of size <= M, the index is -INFINITY.
  *
  *  See the following paper for the formula and further discussion:
  *  M. Gagolewski, M. Bartoszuk, A. Cena,
@@ -55,7 +55,7 @@ public:
     {
         for (size_t i=0; i<K; ++i)
             if (count[i] <= M)
-                return -INFTY;
+                return -INFINITY;
 
         size_t wcnn = 0;
         for (size_t i=0; i<n; ++i) {

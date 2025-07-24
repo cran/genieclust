@@ -2,10 +2,10 @@
  *
  *  Code originally contributed in <https://github.com/gagolews/optim_cvi>,
  *  see https://doi.org/10.1016/j.ins.2021.10.004.
- *  Copyleft (C) 2020, Maciej Bartoszuk <http://bartoszuk.rexamine.com>
+ *  Copyleft (C) 2020, Maciej Bartoszuk
  *
  *  For the 'genieclust' version:
- *  Copyleft (C) 2020-2024, Marek Gagolewski <https://www.gagolewski.com>
+ *  Copyleft (C) 2020-2025, Marek Gagolewski <https://www.gagolewski.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License
@@ -45,7 +45,7 @@ public:
     virtual void recompute_all() {
         for (size_t i=0; i<K; ++i) {
             for (size_t j=i+1; j<K; ++j) {
-                dist(i,j) = dist(j,i) = DistTriple(0, 0, 0); //the only reason for this method is initialization by 0, not INFTY
+                dist(i,j) = dist(j,i) = DistTriple(0, 0, 0); //the only reason for this method is initialization by 0, not INFINITY
             }
         }
 

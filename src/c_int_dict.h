@@ -1,6 +1,6 @@
 /*  class CIntDict
  *
- *  Copyleft (C) 2018-2024, Marek Gagolewski <https://www.gagolewski.com>
+ *  Copyleft (C) 2018-2025, Marek Gagolewski <https://www.gagolewski.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License
@@ -24,7 +24,7 @@
 
 
 
-/*! ordered_map (dictionary) for keys in {0,1,...,n-1} (small ints).
+/*! An ordered_map (dictionary) for keys in {0,1,...,n-1} (small ints).
  * Elements are stored in the natural 0 <= 1 <= ... <= n-1 order.
  *
  * Most supported operations (except for inserting a new key

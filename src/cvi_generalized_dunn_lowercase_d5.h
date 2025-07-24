@@ -2,10 +2,10 @@
  *
  *  Code originally contributed in <https://github.com/gagolews/optim_cvi>,
  *  see https://doi.org/10.1016/j.ins.2021.10.004.
- *  Copyleft (C) 2020, Maciej Bartoszuk <http://bartoszuk.rexamine.com>
+ *  Copyleft (C) 2020, Maciej Bartoszuk
  *
  *  For the 'genieclust' version:
- *  Copyleft (C) 2020-2024, Marek Gagolewski <https://www.gagolewski.com>
+ *  Copyleft (C) 2020-2025, Marek Gagolewski <https://www.gagolewski.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License
@@ -53,7 +53,7 @@ public:
     }
 
 
-    virtual void before_modify(size_t i, Py_ssize_t j) {
+    virtual void before_modify(size_t i, Py_ssize_t /*j*/) {
         last_chg = true;
         for (size_t u=0; u<K; ++u) {
                 last_dist_sums[u] = dist_sums[u];
@@ -72,7 +72,7 @@ public:
     }
 
 
-    virtual void after_modify(size_t i, Py_ssize_t j) {
+    virtual void after_modify(size_t i, Py_ssize_t /*j*/) {
         // Py_ssize_t cluster_index = L[i];
         // FLOAT_T act = 0.0;
         // for (size_t u=0; u<d; ++u) {

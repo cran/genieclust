@@ -1,6 +1,6 @@
 /*  Lightweight matrix class - KISS
  *
- *  Copyleft (C) 2018-2024, Marek Gagolewski <https://www.gagolewski.com>
+ *  Copyleft (C) 2018-2025, Marek Gagolewski <https://www.gagolewski.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License
@@ -86,11 +86,11 @@ public:
      * @param j
      * @return a reference to the indicated matrix element
      */
-    T& operator()(const size_t i, const size_t j) {
+    inline T& operator()(const size_t i, const size_t j) {
         return elems[d*i + j];
     }
 
-    const T& operator()(const size_t i, const size_t j) const {
+    inline const T& operator()(const size_t i, const size_t j) const {
         return elems[d*i + j];
     }
 

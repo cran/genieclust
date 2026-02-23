@@ -2,7 +2,7 @@
 
 # ############################################################################ #
 #                                                                              #
-#   Copyleft (C) 2020-2025, Marek Gagolewski <https://www.gagolewski.com>      #
+#   Copyleft (C) 2020-2026, Marek Gagolewski <https://www.gagolewski.com>      #
 #                                                                              #
 #                                                                              #
 #   This program is free software: you can redistribute it and/or modify       #
@@ -18,8 +18,7 @@
 # ############################################################################ #
 
 
-
-#' @title The Genie Hierarchical Clustering Algorithm (with Extras)
+#' @title Genie: Fast and Robust Hierarchical Clustering
 #'
 #' @description
 #' See \code{\link{genie}()} for more details.
@@ -28,9 +27,9 @@
 #' @importFrom Rcpp evalCpp
 #' @importFrom stats hclust
 #' @importFrom stats cutree
-#' @importFrom quitefastmst knn_euclid
-#' @importFrom quitefastmst mst_euclid
 #' @importFrom stats dist
 #' @importFrom utils capture.output
+#' @importFrom utils tail
+#' @importFrom deadwood mst
 #' @keywords internal
 "_PACKAGE"

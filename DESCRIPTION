@@ -1,9 +1,8 @@
 Package: genieclust
 Type: Package
-Title: Fast and Robust Hierarchical Clustering with Noise Point
-        Detection
-Version: 1.2.0
-Date: 2025-07-24
+Title: Genie: Fast and Robust Hierarchical Clustering
+Version: 1.3.0
+Date: 2026-02-23
 Authors@R: c(
     person("Marek", "Gagolewski",
         role = c("aut", "cre", "cph"),
@@ -13,16 +12,15 @@ Authors@R: c(
     person("Anna", "Cena", role = c("ctb")),
     person("Peter M.", "Larsen", role = c("ctb"))
     )
-Description: The Genie algorithm
-    (Gagolewski, 2021 <DOI:10.1016/j.softx.2021.100722>) is a robust
-    and outlier-resistant hierarchical clustering method
+Description: Genie is a robust hierarchical clustering algorithm
     (Gagolewski, Bartoszuk, Cena, 2016 <DOI:10.1016/j.ins.2016.05.003>).
-    This package features its faster and more powerful version.
-    It allows clustering with respect to mutual reachability distances,
-    enabling it to act as a noise point detector or a version of
-    'HDBSCAN*' that can identify a predefined number of
-    clusters. The package also features an implementation
-    of the Gini and Bonferroni inequality indices, external cluster validity
+    'genieclust' is its faster, more capable implementation
+    (Gagolewski, 2021 <DOI:10.1016/j.softx.2021.100722>).  It enables
+    clustering with respect to mutual reachability distances, allowing it to
+    act as an alternative to 'HDBSCAN*' that can identify any number of clusters
+    or their entire hierarchy.  When combined with the 'deadwood' package,
+    it can act as an outlier detector.  Additional package features include
+    the Gini and Bonferroni inequality indices, external cluster validity
     measures (e.g., the normalised clustering accuracy, the adjusted Rand index,
     the Fowlkes-Mallows index, and normalised mutual information), and internal
     cluster validity indices (e.g., the Calinski-Harabasz, Davies-Bouldin,
@@ -33,14 +31,14 @@ URL: https://genieclust.gagolewski.com/,
         https://clustering-benchmarks.gagolewski.com/,
         https://github.com/gagolews/genieclust
 License: AGPL-3
-Imports: Rcpp, stats, utils, quitefastmst
+Imports: Rcpp, stats, utils, deadwood
 Suggests: datasets,
 LinkingTo: Rcpp
 Encoding: UTF-8
-SystemRequirements: OpenMP, C++17
-RoxygenNote: 7.3.2
+SystemRequirements: OpenMP
+RoxygenNote: 7.3.3
 NeedsCompilation: yes
-Packaged: 2025-07-24 14:18:57 UTC; gagolews
+Packaged: 2026-02-23 14:30:05 UTC; gagolews
 Author: Marek Gagolewski [aut, cre, cph] (ORCID:
     <https://orcid.org/0000-0003-0637-6028>),
   Maciej Bartoszuk [ctb],
@@ -48,4 +46,4 @@ Author: Marek Gagolewski [aut, cre, cph] (ORCID:
   Peter M. Larsen [ctb]
 Maintainer: Marek Gagolewski <marek@gagolewski.com>
 Repository: CRAN
-Date/Publication: 2025-07-24 16:00:02 UTC
+Date/Publication: 2026-02-23 17:00:20 UTC

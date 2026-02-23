@@ -1,6 +1,6 @@
 /*  The Genie Clustering Algorithm - R Wrapper
  *
- *  Copyleft (C) 2018-2025, Marek Gagolewski <https://www.gagolewski.com>
+ *  Copyleft (C) 2018-2026, Marek Gagolewski <https://www.gagolewski.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License
@@ -17,13 +17,13 @@
 #include "c_common.h"
 #include "c_matrix.h"
 #include "c_genie.h"
-#include "c_postprocess.h"
+#include "c_graph_process.h"
 #include <cmath>
 
 using namespace Rcpp;
 
 
-/* This function was originally part of our `genie` package for R */
+/* This function was originally part of the `genie` package for R */
 void internal_generate_merge(Py_ssize_t n, NumericMatrix links, NumericMatrix merge)
 {
     std::vector<Py_ssize_t> elements(n+1, 0);
@@ -74,7 +74,7 @@ void internal_generate_merge(Py_ssize_t n, NumericMatrix links, NumericMatrix me
 }
 
 
-/* Originally, this function was part of our `genie` package for R */
+/* Originally, this function was part of the `genie` package for R */
 void internal_generate_order(Py_ssize_t n, NumericMatrix merge, NumericVector order)
 {
    std::vector< std::list<double> > relord(n+1);
@@ -104,35 +104,33 @@ void internal_generate_order(Py_ssize_t n, NumericMatrix merge, NumericVector or
 
 // [[Rcpp::export(".genie")]]
 IntegerVector dot_genie(
-        NumericMatrix mst,
-        int k,
-        double gini_threshold,
-        String postprocess,
-        bool detect_noise,
-        bool verbose)
-{
+    NumericMatrix mst,
+    int k,
+    double gini_threshold,
+    bool verbose
+) {
     if (verbose) GENIECLUST_PRINT("[genieclust] Determining clusters.\n");
 
     if (gini_threshold < 0.0 || gini_threshold > 1.0)
         stop("`gini_threshold` must be in [0, 1]");
 
-    if (postprocess == "boundary" && detect_noise && Rf_isNull(mst.attr("nn.index")))
-        stop("`nn.index` attribute of the MST not set; unable to proceed with this postprocessing action");
-
     Py_ssize_t n = mst.nrow()+1;
 
-    if (k < 1 || k > n) stop("invalid requested number of clusters, `k`");
+    if (k < 1 || k > n) stop("invalid number of clusters requested, `k`");
 
     CMatrix<Py_ssize_t> mst_i(n-1, 2);
-    std::vector<double>  mst_d(n-1);
+    std::vector<double> mst_d(n-1);
+
 
     for (Py_ssize_t i=0; i<n-1; ++i) {
-        mst_i(i, 0) = (Py_ssize_t)mst(i, 0)-1;  // 1-based to 0-based indices
-        mst_i(i, 1) = (Py_ssize_t)mst(i, 1)-1;  // 1-based to 0-based indices
+        mst_i(i, 0) = (Py_ssize_t)mst(i, 0) - 1;  // 1-based to 0-based indexes
+        mst_i(i, 1) = (Py_ssize_t)mst(i, 1) - 1;  // 1-based to 0-based indexes
         mst_d[i] = mst(i, 2);
     }
 
-    CGenie<double> g(mst_d.data(), mst_i.data(), n, detect_noise);
+    // TODO skip_nodes
+
+    CGenie<double> g(mst_d.data(), mst_i.data(), n/*, skip_leaves*/);
     g.compute(k, gini_threshold);
 
 
@@ -141,35 +139,60 @@ IntegerVector dot_genie(
     std::vector<Py_ssize_t> xres(n);
     Py_ssize_t k_detected = g.get_labels(k, xres.data());
 
-    if (k_detected != k)
-        Rf_warning("The number of clusters detected is different from the requested one due to the presence of noise points.");
+    if (k_detected != k)  // TODO: remove
+        stop("The number of clusters detected is different from the requested one, possibly due to the presence of outliers.");
 
-    if (detect_noise && postprocess == "boundary") {
-        NumericMatrix nn_r = mst.attr("nn.index");
-        GENIECLUST_ASSERT(nn_r.nrow() == n);
-        Py_ssize_t M = nn_r.ncol()+1;
-        GENIECLUST_ASSERT(M < n);
-        CMatrix<Py_ssize_t> nn_i(n, M-1);
-        for (Py_ssize_t i=0; i<n; ++i) {
-            for (Py_ssize_t j=0; j<M-1; ++j) {
-                GENIECLUST_ASSERT(nn_r(i,j) >= 1);
-                GENIECLUST_ASSERT(nn_r(i,j) <= n);
-                nn_i(i,j) = (Py_ssize_t)nn_r(i,j)-1; // 0-based indexing
-            }
-        }
+    // if (skip_leaves) {
+    //     if (postprocess == "midliers") {
+    //         if (Rf_isNull(mst.attr("nn.index")))
+    //             stop("`nn.index` attribute of the MST not set; unable to proceed with this postprocessing action");
+    //
+    //         NumericMatrix nn_r = mst.attr("nn.index");
+    //         GENIECLUST_ASSERT(nn_r.nrow() == n);
+    //         Py_ssize_t M = nn_r.ncol();
+    //         GENIECLUST_ASSERT(M < n);
+    //         CMatrix<Py_ssize_t> nn_i(n, M);
+    //         for (Py_ssize_t i=0; i<n; ++i) {
+    //             for (Py_ssize_t j=0; j<M; ++j) {
+    //                 GENIECLUST_ASSERT(nn_r(i,j) >= 1);
+    //                 GENIECLUST_ASSERT(nn_r(i,j) <= n);
+    //                 nn_i(i,j) = (Py_ssize_t)nn_r(i,j) - 1;  // 0-based indexes
+    //             }
+    //         }
+    //
+    //         Cmerge_midliers(mst_i.data(), n-1, nn_i.data(), M, M, xres.data(), n);
+    //     }
+    //     else if (postprocess == "all") {
+    //         Cmerge_all(mst_i.data(), n-1, xres.data(), n);
+    //     }
+    //     else if (postprocess == "none") {
+    //         ;  // pass
+    //     }
+    //     else
+    //         stop("invalid `postprocess`");
+    // }
 
-        Cmerge_boundary_points(mst_i.data(), n-1, nn_i.data(),
-                               M-1, M, xres.data(), n);
-    }
-    else if (detect_noise && postprocess == "all") {
-        Cmerge_noise_points(mst_i.data(), n-1, xres.data(), n);
-    }
-
+    // k_detected TODO cut_edges....
     IntegerVector res(n);
     for (Py_ssize_t i=0; i<n; ++i) {
-        if (xres[i] < 0) res[i] = NA_INTEGER; // noise point
-        else res[i] = xres[i] + 1;
+        GENIECLUST_ASSERT(xres[i] >= 0);
+        if (xres[i] < 0) res[i] = NA_INTEGER;  // outlier/noise point TODO: remove
+        else res[i] = xres[i] + 1;  // 1-based indexes
     }
+
+    NumericVector cut_edges(k_detected-1);
+    Py_ssize_t e=0;
+    for (Py_ssize_t i=0; i<n-1; ++i) {
+        if (xres[mst_i(i, 0)] != xres[mst_i(i, 1)]) {
+            cut_edges[e++] = i+1;  // 1-based
+            if (e == k_detected-1) break;
+        }
+    }
+    GENIECLUST_ASSERT(e == k_detected-1);
+    res.attr("cut_edges") = cut_edges;
+
+    //std::vector<Py_ssize_t> links(n-1);
+    //g.get_links(links.data());
 
     if (verbose) GENIECLUST_PRINT("[genieclust] Done.\n");
 
@@ -180,10 +203,10 @@ IntegerVector dot_genie(
 
 // [[Rcpp::export(".gclust")]]
 List dot_gclust(
-        NumericMatrix mst,
-        double gini_threshold,
-        bool verbose)
-{
+    NumericMatrix mst,
+    double gini_threshold,
+    bool verbose
+) {
     if (verbose) GENIECLUST_PRINT("[genieclust] Determining clusters.\n");
 
     if (gini_threshold < 0.0 || gini_threshold > 1.0)
@@ -191,52 +214,59 @@ List dot_gclust(
 
     Py_ssize_t n = mst.nrow()+1;
     CMatrix<Py_ssize_t> mst_i(n-1, 2);
-    std::vector<double>  mst_d(n-1);
+    std::vector<double> mst_d(n-1);
 
     for (Py_ssize_t i=0; i<n-1; ++i) {
-        mst_i(i, 0) = (Py_ssize_t)mst(i, 0)-1; // 1-based to 0-based indices
-        mst_i(i, 1) = (Py_ssize_t)mst(i, 1)-1; // 1-based to 0-based indices
+        mst_i(i, 0) = (Py_ssize_t)mst(i, 0) - 1;  // 1-based to 0-based indexes
+        mst_i(i, 1) = (Py_ssize_t)mst(i, 1) - 1;  // 1-based to 0-based indexes
         mst_d[i] = mst(i, 2);
     }
 
-    CGenie<double> g(mst_d.data(), mst_i.data(), n/*, noise_leaves=M>1*/);
+    CGenie<double> g(mst_d.data(), mst_i.data(), n);
     g.compute(1, gini_threshold);
 
 
-    if (verbose) GENIECLUST_PRINT("[genieclust] Postprocessing the outputs.\n");
+    if (verbose) GENIECLUST_PRINT("[genieclust] Postprocessing outputs.\n");
 
     std::vector<Py_ssize_t> links(n-1);
     g.get_links(links.data());
 
-
-
-    NumericMatrix links2(n-1, 2);
+    NumericVector linksr(n-1, NA_REAL);
+    NumericMatrix mst_i_reordered(n-1, 2);
     NumericVector height(n-1, NA_REAL);
     Py_ssize_t k = 0;
     for (Py_ssize_t i=0; i<n-1; ++i) {
         if (links[i] >= 0) {
-            links2(k, 0) = mst_i(links[i], 0) + 1;
-            links2(k, 1) = mst_i(links[i], 1) + 1;
+            linksr(k) = links[i] + 1;  // 1-based indexing
+            mst_i_reordered(k, 0) = mst_i(links[i], 0) + 1;  // 1-based indexing
+            mst_i_reordered(k, 1) = mst_i(links[i], 1) + 1;  // 1-based indexing
             height(k) = mst_d[ links[i] ];
             ++k;
         }
     }
+    GENIECLUST_ASSERT(k == n-1); // TODO
     for (; k<n-1; ++k) {
-        links2(k, 0) = links2(k, 1) = NA_REAL;
+        mst_i_reordered(k, 0) = mst_i_reordered(k, 1) = NA_REAL;
     }
 
 
     NumericMatrix merge(n-1, 2);
-    internal_generate_merge(n, links2, merge);
+    internal_generate_merge(n, mst_i_reordered, merge);
 
     NumericVector order(n, NA_REAL);
     internal_generate_order(n, merge, order);
 
     if (verbose) GENIECLUST_PRINT("[genieclust] Done.\n");
 
-    return List::create(
+    List res = List::create(
         _["merge"]  = merge,
         _["height"] = height,
         _["order"]  = order
     );
+
+    // res.attr("class") =; ...;  // R level
+    // res.attr("mst") = ...;  // R level
+    res.attr("links") = linksr;
+
+    return res;
 }
